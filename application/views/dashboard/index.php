@@ -103,7 +103,7 @@
           <div class="chart-sub">Klik bar atau legend untuk detail</div>
           <div style="height:220px"><canvas id="chartVerifSumber"></canvas></div>
           <div style="font-size:12px; color:#999; text-align:center; margin-top:8px; padding:0 8px;">
-            💡 Gunakan <strong>legend</strong> untuk melihat semua data (kecil atau besar)
+           Gunakan <strong>legend</strong> untuk melihat semua data (kecil atau besar)
           </div>
         </div>
       </div>
@@ -123,25 +123,47 @@
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Konsumen — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['terverifikasi'], 0, ',', '.') ?></div>
-              <span class="pill pill-green" style="font-size:10px"><?= $pct_konsumen_verif ?>%</span>
+              <span class="pill <?= $pct_konsumen_verif >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_konsumen_verif ?>%</span>
             </div>
             <div class="status-item" onclick="openModal('verif_konsumen_belum')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Konsumen — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['belum'], 0, ',', '.') ?></div>
-              <span class="pill pill-red" style="font-size:10px"><?= ($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum']) > 0 ? round(($verif_per_sumber['konsumen']['belum']/($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum']))*100) : 0 ?>%</span>
+              <?php
+                $pct_konsumen_belum = ($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum']) > 0
+                  ? round(($verif_per_sumber['konsumen']['belum']/($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum']))*100)
+                  : 0;
+                if ($pct_konsumen_belum > 60) {
+                  $pill_class = 'pill-red';
+                } elseif ($pct_konsumen_belum >= 30) {
+                  $pill_class = 'pill-orange';
+                } else {
+                  $pill_class = 'pill-green';
+                }
+              ?>
+              <span class="pill <?= $pill_class ?>" style="font-size:10px"><?= $pct_konsumen_belum ?>%</span>
             </div>
             <div class="status-item" onclick="openModal('verif_sosmed_v')">
               <div class="status-dot-sm" style="background:#1A56DB"></div>
               <div class="status-name">Sosmed — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['terverifikasi'], 0, ',', '.') ?></div>
-              <span class="pill <?= $pct_verif_sosmed >= 80 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_verif_sosmed ?>%</span>
+              <span class="pill <?= $pct_verif_sosmed >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_verif_sosmed ?>%</span>
             </div>
             <div class="status-item" onclick="openModal('verif_sosmed_b')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Sosmed — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['belum'], 0, ',', '.') ?></div>
-              <span class="pill pill-red" style="font-size:10px"><?= $total_sosmed > 0 ? round(($verif_per_sumber['sosmed']['belum']/$total_sosmed)*100) : 0 ?>%</span>
+              <?php
+                $pct_sosmed_belum = $total_sosmed > 0 ? round(($verif_per_sumber['sosmed']['belum']/$total_sosmed)*100) : 0;
+                if ($pct_sosmed_belum > 60) {
+                  $pill_class_sosmed = 'pill-red';
+                } elseif ($pct_sosmed_belum >= 30) {
+                  $pill_class_sosmed = 'pill-orange';
+                } else {
+                  $pill_class_sosmed = 'pill-green';
+                }
+              ?>
+              <span class="pill <?= $pill_class_sosmed ?>" style="font-size:10px"><?= $pct_sosmed_belum ?>%</span>
             </div>
           </div>
         </div>
