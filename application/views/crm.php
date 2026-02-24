@@ -56,7 +56,6 @@
     </div>
   </div>
   <div class="d-flex align-items-center gap-3">
-    <div class="live-badge">LIVE</div>
     <span id="clock" class="text-secondary" style="font-family:monospace;font-size:13px">--:--</span>
   </div>
 </nav>
