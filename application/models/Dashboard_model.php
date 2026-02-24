@@ -176,6 +176,53 @@ class Dashboard_model extends CI_Model {
         return $this->db->get()->result_array();
     }
 
+    /**
+     * Data eskalasi per sumber (konsumen vs sosmed)
+     * Sudah eskalasi = escalation_at IS NOT NULL
+     * Belum eskalasi = escalation_at IS NULL
+     * Return array: [ 'konsumen' => ['sudah'=>n, 'belum'=>n], 'sosmed' => [...] ]
+     */
+    public function get_eskalasi_per_sumber($filter = []) {
+        $result = [
+            'konsumen' => ['sudah' => 0, 'belum' => 0],
+            'sosmed'   => ['sudah' => 0, 'belum' => 0],
+        ];
+
+        // Konsumen sudah eskalasi
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->where('t.status_konsumen', 1);
+        $this->db->where('t.escalation_at IS NOT NULL', null, false);
+        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $result['konsumen']['sudah'] = $this->db->count_all_results();
+
+        // Konsumen belum eskalasi
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->where('t.status_konsumen', 1);
+        $this->db->where('t.escalation_at IS NULL', null, false);
+        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $result['konsumen']['belum'] = $this->db->count_all_results();
+
+        // Sosmed sudah eskalasi
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        $this->db->where('t.escalation_at IS NOT NULL', null, false);
+        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $result['sosmed']['sudah'] = $this->db->count_all_results();
+
+        // Sosmed belum eskalasi
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        $this->db->where('t.escalation_at IS NULL', null, false);
+        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $result['sosmed']['belum'] = $this->db->count_all_results();
+
+        return $result;
+    }
+
     // ============================================================
     // SECTION 03 — KETEPATAN WAKTU
     // ============================================================
@@ -378,6 +425,22 @@ class Dashboard_model extends CI_Model {
             case 'esk_belum':
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
+            case 'esk_konsumen_sudah':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
+            case 'esk_sosmed_sudah':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_sosmed_belum':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
@@ -450,6 +513,22 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false); break;
             case 'esk_belum':
                 $this->db->where('t.escalation_at IS NULL', null, false); break;
+            case 'esk_konsumen_sudah':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
+            case 'esk_sosmed_sudah':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_sosmed_belum':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);

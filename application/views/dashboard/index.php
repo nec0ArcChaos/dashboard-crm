@@ -188,14 +188,14 @@
     </div>
 
     <div class="row g-3">
-      <div class="col-12 col-md-8">
+      <div class="col-12 col-lg-6">
         <div class="chart-card">
           <div class="chart-title">Trend Eskalasi</div>
           <div class="chart-sub">Distribusi per bulan</div>
           <div style="height:200px"><canvas id="chartEskalasiTrend"></canvas></div>
         </div>
       </div>
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6 col-lg-3">
         <div class="chart-card" style="cursor:pointer" onclick="openModal('esk_sudah')">
           <div class="chart-title">Proporsi Eskalasi <small class="text-primary" style="font-size:10px">↗ Detail</small></div>
           <div class="chart-sub">Klik untuk detail</div>
@@ -209,6 +209,38 @@
               <span class="status-dot-sm" style="background:#D97706"></span>
               <span style="font-size:12px">Belum <?= 100-$rate_eskalasi ?>%</span>
             </span>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="chart-card">
+          <div class="chart-title">Ringkasan Eskalasi</div>
+          <div class="chart-sub">Per sumber &amp; status</div>
+          <div class="mt-2">
+            <div class="status-item" onclick="openModal('esk_konsumen_sudah')">
+              <div class="status-dot-sm" style="background:#0E9F6E"></div>
+              <div class="status-name">Konsumen — Sudah Esk.</div>
+              <div class="status-qty"><?= number_format($eskalasi_per_sumber['konsumen']['sudah'], 0, ',', '.') ?></div>
+              <span class="pill pill-green" style="font-size:10px"><?= $pct_konsumen_eskalasi ?>%</span>
+            </div>
+            <div class="status-item" onclick="openModal('esk_konsumen_belum')">
+              <div class="status-dot-sm" style="background:#E02424"></div>
+              <div class="status-name">Konsumen — Belum Esk.</div>
+              <div class="status-qty"><?= number_format($eskalasi_per_sumber['konsumen']['belum'], 0, ',', '.') ?></div>
+              <span class="pill pill-red" style="font-size:10px"><?= ($eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum']) > 0 ? round(($eskalasi_per_sumber['konsumen']['belum']/($eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum']))*100) : 0 ?>%</span>
+            </div>
+            <div class="status-item" onclick="openModal('esk_sosmed_sudah')">
+              <div class="status-dot-sm" style="background:#0E9F6E"></div>
+              <div class="status-name">Sosmed — Sudah Esk.</div>
+              <div class="status-qty"><?= number_format($eskalasi_per_sumber['sosmed']['sudah'], 0, ',', '.') ?></div>
+              <span class="pill pill-green" style="font-size:10px"><?= $pct_sosmed_eskalasi ?>%</span>
+            </div>
+            <div class="status-item" onclick="openModal('esk_sosmed_belum')">
+              <div class="status-dot-sm" style="background:#E02424"></div>
+              <div class="status-name">Sosmed — Belum Esk.</div>
+              <div class="status-qty"><?= number_format($eskalasi_per_sumber['sosmed']['belum'], 0, ',', '.') ?></div>
+              <span class="pill pill-red" style="font-size:10px"><?= ($eskalasi_per_sumber['sosmed']['sudah'] + $eskalasi_per_sumber['sosmed']['belum']) > 0 ? round(($eskalasi_per_sumber['sosmed']['belum']/($eskalasi_per_sumber['sosmed']['sudah'] + $eskalasi_per_sumber['sosmed']['belum']))*100) : 0 ?>%</span>
+            </div>
           </div>
         </div>
       </div>

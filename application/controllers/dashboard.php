@@ -47,6 +47,20 @@ class Dashboard extends CI_Controller {
             ? round(($sudah_eskalasi / $total_komplain) * 100)
             : 0;
 
+        $eskalasi_per_sumber = $this->dashboard_m->get_eskalasi_per_sumber($filter);
+
+        // Hitung persentase eskalasi per sumber
+        $total_konsumen = $eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum'];
+        $total_sosmed   = $eskalasi_per_sumber['sosmed']['sudah'] + $eskalasi_per_sumber['sosmed']['belum'];
+
+        $pct_konsumen_eskalasi = $total_konsumen > 0
+            ? round(($eskalasi_per_sumber['konsumen']['sudah'] / $total_konsumen) * 100)
+            : 0;
+
+        $pct_sosmed_eskalasi = $total_sosmed > 0
+            ? round(($eskalasi_per_sumber['sosmed']['sudah'] / $total_sosmed) * 100)
+            : 0;
+
         $trend_eskalasi_raw = $this->dashboard_m->get_trend_eskalasi($filter);
         $trend_labels = [];
         $trend_data   = [];
@@ -152,6 +166,9 @@ class Dashboard extends CI_Controller {
             'sudah_eskalasi'      => $sudah_eskalasi,
             'belum_eskalasi'      => $belum_eskalasi,
             'rate_eskalasi'       => $rate_eskalasi,
+            'eskalasi_per_sumber' => $eskalasi_per_sumber,
+            'pct_konsumen_eskalasi' => $pct_konsumen_eskalasi,
+            'pct_sosmed_eskalasi'   => $pct_sosmed_eskalasi,
             'trend_labels_json'   => json_encode(array_values($trend_labels)),
             'trend_data_json'     => json_encode(array_values($trend_data)),
 
