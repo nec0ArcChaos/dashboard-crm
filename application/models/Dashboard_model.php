@@ -352,11 +352,9 @@ class Dashboard_model extends CI_Model {
         switch ($type) {
             case 'verif_terverifikasi':
                 $this->db->where('t.status !=', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_belum':
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
@@ -365,17 +363,14 @@ class Dashboard_model extends CI_Model {
             case 'verif_konsumen_belum':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.status !=', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'esk_sudah':
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
@@ -431,29 +426,25 @@ class Dashboard_model extends CI_Model {
         switch ($type) {
             case 'verif_terverifikasi':
                 $this->db->where('t.status !=', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_belum':
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.status !=', 1); break;
+                $this->db->where('t.status !=', 1);
+                break;
             case 'verif_konsumen_belum':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.status !=', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.status', 1);
-                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'esk_sudah':
                 $this->db->where('t.escalation_at IS NOT NULL', null, false); break;
