@@ -199,10 +199,14 @@ class Dashboard extends CI_Controller {
     // AJAX — Modal Detail Komplain
     // ============================================================
     public function modal_detail() {
-        $type      = $this->input->get_post('type');
-        $status_id = $this->input->get_post('status_id');
-        $divisi    = $this->input->get_post('divisi');
-        $page      = (int)$this->input->get_post('page') ?: 1;
+        // Set no-cache headers
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $type      = $this->input->get('type');
+        $status_id = $this->input->get('status_id');
+        $divisi    = $this->input->get('divisi');
+        $page      = (int)$this->input->get('page') ?: 1;
         $per_page  = 10;
         $offset    = ($page - 1) * $per_page;
         $filter    = $this->_get_filter();
@@ -251,6 +255,54 @@ class Dashboard extends CI_Controller {
                 'page'    => $page,
                 'per_page'=> $per_page,
             ]));
+    }
+
+    // ============================================================
+    // AJAX — Drilldown Verifikasi (tabel detail komplain)
+    // ============================================================
+    public function drilldown_verifikasi() {
+        try {
+            // Set no-cache headers
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+
+            $page     = (int)$this->input->get('page') ?: 1;
+            $per_page = (int)$this->input->get('per_page') ?: 20;
+            $offset   = ($page - 1) * $per_page;
+            $filter   = $this->_get_filter();
+
+            $rows  = $this->dashboard_m->get_drilldown_verifikasi($filter, $per_page, $offset);
+            $total = $this->dashboard_m->count_drilldown_verifikasi($filter);
+
+            // Format untuk response JSON
+            $data = [];
+            foreach ($rows as $row) {
+                $data[] = [
+                    'id_task'     => $row['id_task'],
+                    'konsumen'    => $row['konsumen'],
+                    'lokasi'      => $row['lokasi'] ?: 'N/A',
+                    'jenis'       => $row['jenis'] ?: 'N/A',
+                    'status'      => $row['status'],
+                ];
+            }
+
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => true,
+                    'data'    => $data,
+                    'total'   => $total,
+                    'page'    => $page,
+                    'per_page'=> $per_page,
+                ]));
+        } catch (Exception $e) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ]));
+        }
     }
 
     // ============================================================

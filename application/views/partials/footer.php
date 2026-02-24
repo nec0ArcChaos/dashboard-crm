@@ -15,6 +15,7 @@
       </div>
       <div class="modal-footer border-top">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-sm btn-info" id="btnDrilldown" style="display:none">Lihat Detail Tabel</button>
         <button type="button" class="btn btn-sm btn-primary" id="btnExport">Export Excel</button>
       </div>
     </div>
@@ -231,11 +232,24 @@ function loadModalPage(page) {
     divisi_filter: filterGlobal.divisi,
   });
 
-  fetch(BASE_URL + 'dashboard/modal_detail?' + params.toString())
-    .then(r => r.json())
+  const fetchUrl = BASE_URL + 'dashboard/modal_detail?' + params.toString();
+  console.log('Loading modal from:', fetchUrl);
+
+  fetch(fetchUrl)
+    .then(r => {
+      console.log('Modal Response status:', r.status);
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      }
+      return r.json();
+    })
     .then(res => {
+      console.log('Modal Response:', res);
       document.getElementById('modalLoading').style.display = 'none';
-      if (!res.success) { document.getElementById('modalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>'; return; }
+      if (!res.success) {
+        document.getElementById('modalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
+        return;
+      }
 
       // Set judul modal
       const titleMap = {
@@ -278,12 +292,21 @@ function loadModalPage(page) {
       html += '</tbody></table></div>';
       document.getElementById('modalContent').innerHTML = html;
 
+      // Show drilldown button untuk modal verifikasi
+      const drilldownBtn = document.getElementById('btnDrilldown');
+      if (['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type)) {
+        drilldownBtn.style.display = 'inline-block';
+      } else {
+        drilldownBtn.style.display = 'none';
+      }
+
       // Paginasi
       renderPagination(res.total, res.per_page, page);
     })
-    .catch(() => {
+    .catch(err => {
+      console.error('Modal Error:', err);
       document.getElementById('modalLoading').style.display = 'none';
-      document.getElementById('modalContent').innerHTML = '<p class="text-danger">Koneksi error.</p>';
+      document.getElementById('modalContent').innerHTML = '<p class="text-danger">Koneksi error: ' + err.message + '</p>';
     });
 }
 
@@ -325,6 +348,117 @@ document.getElementById('btnExport').addEventListener('click', () => {
   });
   window.open(BASE_URL + 'dashboard/modal_detail?' + params.toString(), '_blank');
 });
+
+// Drilldown button
+document.getElementById('btnDrilldown').addEventListener('click', () => {
+  document.getElementById('modalTitle').textContent = 'Detail Komplain — Verifikasi';
+  openDrilldownVerifikasi();
+});
+
+// ============================================================
+// DRILLDOWN VERIFIKASI — Tabel detail di dalam modal
+// ============================================================
+let _drilldownActive = false;
+
+function openDrilldownVerifikasi() {
+  _drilldownActive = true;
+  document.getElementById('modalContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data detail...</p></div>';
+  loadDrilldownPage(1);
+}
+
+function loadDrilldownPage(page) {
+  const params = new URLSearchParams({
+    page:      page,
+    per_page:  20,
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi:    filterGlobal.divisi,
+  });
+
+  const fetchUrl = BASE_URL + 'dashboard/drilldown_verifikasi?' + params.toString();
+  console.log('Fetching drilldown from:', fetchUrl);
+
+  fetch(fetchUrl)
+    .then(r => {
+      console.log('Response status:', r.status);
+      if (!r.ok) {
+        throw new Error(`HTTP Error: ${r.status}`);
+      }
+      return r.json();
+    })
+    .then(res => {
+      console.log('Response data:', res);
+      if (!res.success) {
+        const errorMsg = res.error || 'Gagal memuat data';
+        document.getElementById('modalContent').innerHTML = `<p class="text-danger">${errorMsg}</p>`;
+        return;
+      }
+
+      if (res.data.length === 0) {
+        document.getElementById('modalContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data.</p>';
+        return;
+      }
+
+      // Render tabel dengan kolom: No. Komplain, Konsumen, Lokasi, Jenis, Status
+      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+        <div class="table-responsive">
+        <table class="table table-sm modal-table align-middle">
+          <thead><tr>
+            <th style="font-size:11px">No. Komplain</th>
+            <th style="font-size:11px">Konsumen</th>
+            <th style="font-size:11px">Lokasi</th>
+            <th style="font-size:11px">Jenis</th>
+            <th style="font-size:11px">Status</th>
+          </tr></thead><tbody>`;
+
+      res.data.forEach(row => {
+        const statusBadgeClass = row.status.includes('Terverifikasi') ? 'done' : 'waiting';
+        html += `<tr>
+          <td><code style="font-size:11px">${row.id_task}</code></td>
+          <td><small>${row.konsumen || '-'}</small></td>
+          <td><small>${row.lokasi || '-'}</small></td>
+          <td><small>${row.jenis || '-'}</small></td>
+          <td><span class="badge-status badge-${statusBadgeClass}" style="font-size:10px">${row.status}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('modalContent').innerHTML = html;
+
+      // Render paginasi
+      if (_drilldownActive) {
+        renderDrilldownPagination(res.total, res.per_page, page);
+      }
+    })
+    .catch(err => {
+      console.error('Drilldown Error:', err);
+      document.getElementById('modalContent').innerHTML = `<p class="text-danger">Koneksi error: ${err.message}</p>`;
+    });
+}
+
+function renderDrilldownPagination(total, per_page, current_page) {
+  const total_pages = Math.ceil(total / per_page);
+  if (total_pages <= 1) {
+    document.getElementById('modalPagination').innerHTML = '';
+    return;
+  }
+
+  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
+  if (current_page > 1) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${current_page-1});return false;">‹</a></li>`;
+  }
+  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
+  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
+  for (let p = start; p <= end; p++) {
+    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadDrilldownPage(${p});return false;">${p}</a></li>`;
+  }
+  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${total_pages});return false;">${total_pages}</a></li>`;
+  if (current_page < total_pages) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${current_page+1});return false;">›</a></li>`;
+  }
+  html += '</ul></nav>';
+  document.getElementById('modalPagination').innerHTML = html;
+}
 
 // ============================================================
 // FILTER — submit via form GET

@@ -467,4 +467,96 @@ class Dashboard_model extends CI_Model {
         ");
         return $query->result_array();
     }
+
+    // ============================================================
+    // DRILL-DOWN VERIFIKASI — Tabel detail komplain per status
+    // ============================================================
+    /**
+     * Ambil detail komplain untuk drilldown verifikasi
+     * Kolom: id_task, konsumen, project, category, status
+     * Status logic: jika status = 1 (waiting) -> "Belum Terverifikasi", else -> "Terverifikasi"
+     */
+    public function get_drilldown_verifikasi($filter = [], $limit = 100, $offset = 0) {
+        $this->db->select('
+            t.id_task,
+            t.konsumen,
+            t.project as lokasi,
+            t.id_project,
+            t.id_category,
+            c.category as jenis_kategori,
+            t.status,
+            t.verified_at,
+            t.created_at
+        ');
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+
+        // Apply global filters
+        if (!empty($filter['date_from'])) {
+            $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+
+        $this->db->order_by('t.created_at', 'DESC');
+        $this->db->limit($limit, $offset);
+
+        $rows = $this->db->get()->result_array();
+
+        // Format hasil dengan status verifikasi
+        $result = [];
+        foreach ($rows as $row) {
+            // Status verifikasi: jika status = 1 (waiting), maka "Belum Terverifikasi", sebaliknya "Terverifikasi"
+            $verif_status = ((int)$row['status'] === 1) ? 'Belum Terverifikasi' : 'Terverifikasi';
+
+            $result[] = [
+                'id_task'         => $row['id_task'],
+                'konsumen'        => $row['konsumen'],
+                'lokasi'          => $row['lokasi'],
+                'id_project'      => $row['id_project'],
+                'jenis'           => $row['jenis_kategori'],
+                'id_category'     => $row['id_category'],
+                'status'          => $verif_status,
+                'status_raw'      => (int)$row['status'],
+                'verified_at'     => $row['verified_at'],
+                'created_at'      => $row['created_at']
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Count total komplain untuk drilldown verifikasi (pagination)
+     */
+    public function count_drilldown_verifikasi($filter = []) {
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+
+        if (!empty($filter['date_from'])) {
+            $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+
+        return $this->db->count_all_results();
+    }
 }
