@@ -157,7 +157,16 @@ new Chart('chartEskalasiDonut', {
   options:{
     responsive:true, maintainAspectRatio:false, cutout:'68%',
     plugins:{ legend:{display:false} },
-    onClick:(e,els)=>{ if(els.length) openModal(els[0].index===0?'esk_sudah':'esk_belum'); }
+    onClick:(e,els)=>{
+      if(els.length) {
+        // Buka modal dengan data gabungan + filter buttons
+        openModal('esk_gabungan');
+        // Segera set filter sesuai dengan yang diklik
+        setTimeout(() => {
+          setSumberEskalasiFilter(els[0].index===0?'sudah':'belum');
+        }, 100);
+      }
+    }
   }
 });
 
@@ -245,10 +254,12 @@ if (slEl) {
 const bsModal = new bootstrap.Modal(document.getElementById('detailModal'));
 let _currentModal = {};
 let _modalSumberFilter = 'all'; // Untuk filter sumber di dalam modal (all, konsumen, sosmed)
+let _modalEskalasiFilter = 'all'; // Untuk filter eskalasi di dalam modal (all, sudah, belum)
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
   _modalSumberFilter = 'all'; // Reset filter sumber
+  _modalEskalasiFilter = 'all'; // Reset filter eskalasi
   document.getElementById('modalTitle').textContent = 'Memuat data...';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
@@ -268,6 +279,7 @@ function loadModalPage(page) {
     sumber:    filterGlobal.sumber,
     divisi_filter: filterGlobal.divisi,
     modal_sumber: _modalSumberFilter, // Filter sumber di dalam modal
+    modal_eskalasi: _modalEskalasiFilter, // Filter eskalasi di dalam modal
   });
 
   const fetchUrl = BASE_URL + 'dashboard/modal_detail?' + params.toString();
@@ -299,6 +311,11 @@ function loadModalPage(page) {
         verif_sosmed_b:      `Sosmed Belum Verifikasi (${res.total.toLocaleString('id')})`,
         esk_sudah:           `Sudah Eskalasi (${res.total.toLocaleString('id')})`,
         esk_belum:           `Belum Eskalasi (${res.total.toLocaleString('id')})`,
+        esk_gabungan:        `Data Eskalasi (${res.total.toLocaleString('id')})`,
+        esk_konsumen_sudah:  `Konsumen — Sudah Eskalasi (${res.total.toLocaleString('id')})`,
+        esk_konsumen_belum:  `Konsumen — Belum Eskalasi (${res.total.toLocaleString('id')})`,
+        esk_sosmed_sudah:    `Sosmed — Sudah Eskalasi (${res.total.toLocaleString('id')})`,
+        esk_sosmed_belum:    `Sosmed — Belum Eskalasi (${res.total.toLocaleString('id')})`,
         status:              `Status Komplain (${res.total.toLocaleString('id')})`,
         divisi:              `Divisi ${_currentModal.extra?.divisi || ''} (${res.total.toLocaleString('id')})`,
       };
@@ -313,6 +330,10 @@ function loadModalPage(page) {
       const isVerifModal = ['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type);
       const needsSumberFilter = ['verif_terverifikasi', 'verif_belum'].includes(_currentModal.type);
 
+      // Render filter buttons untuk eskalasi gabungan
+      const isEskalasiGabungan = _currentModal.type === 'esk_gabungan';
+      const needsEskalasiFilter = isEskalasiGabungan;
+
       let filterButtonsHtml = '';
       if (needsSumberFilter) {
         filterButtonsHtml = `
@@ -320,6 +341,14 @@ function loadModalPage(page) {
             <button class="btn btn-sm ${_modalSumberFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('all')">Semua Sumber</button>
             <button class="btn btn-sm ${_modalSumberFilter === 'konsumen' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('konsumen')">Konsumen</button>
             <button class="btn btn-sm ${_modalSumberFilter === 'sosmed' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('sosmed')">Sosmed</button>
+          </div>
+        `;
+      } else if (needsEskalasiFilter) {
+        filterButtonsHtml = `
+          <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="btn btn-sm ${_modalEskalasiFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('all')">Semua Data</button>
+            <button class="btn btn-sm ${_modalEskalasiFilter === 'sudah' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('sudah')">Sudah Eskalasi</button>
+            <button class="btn btn-sm ${_modalEskalasiFilter === 'belum' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('belum')">Belum Eskalasi</button>
           </div>
         `;
       }
@@ -367,6 +396,12 @@ function loadModalPage(page) {
 // Function untuk set sumber filter dan reload modal
 function setSumberFilter(sumber) {
   _modalSumberFilter = sumber;
+  loadModalPage(1); // Reload halaman 1 dengan filter baru
+}
+
+// Function untuk set eskalasi filter dan reload modal
+function setSumberEskalasiFilter(eskalasi) {
+  _modalEskalasiFilter = eskalasi;
   loadModalPage(1); // Reload halaman 1 dengan filter baru
 }
 

@@ -196,9 +196,9 @@
         </div>
       </div>
       <div class="col-12 col-md-6 col-lg-3">
-        <div class="chart-card" style="cursor:pointer" onclick="openModal('esk_sudah')">
-          <div class="chart-title">Proporsi Eskalasi <small class="text-primary" style="font-size:10px">↗ Detail</small></div>
-          <div class="chart-sub">Klik untuk detail</div>
+        <div class="chart-card">
+          <div class="chart-title">Proporsi Eskalasi <small class="text-primary" style="font-size:10px">↗ Klik chart</small></div>
+          <div class="chart-sub">Klik lingkaran untuk detail</div>
           <div style="height:160px"><canvas id="chartEskalasiDonut"></canvas></div>
           <div class="d-flex justify-content-center gap-3 mt-3">
             <span class="d-flex align-items-center gap-1">

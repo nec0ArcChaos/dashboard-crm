@@ -425,6 +425,10 @@ class Dashboard_model extends CI_Model {
             case 'esk_belum':
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
+            case 'esk_gabungan':
+                // Menampilkan semua data eskalasi (baik sudah maupun belum)
+                // Filter sumber akan diaplikasikan dari modal_sumber
+                break;
             case 'esk_konsumen_sudah':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
@@ -461,6 +465,15 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.status_konsumen', 1);
             } elseif ($extra['modal_sumber'] === 'sosmed') {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal eskalasi filter untuk eskalasi gabungan modal
+        if (!empty($extra['modal_eskalasi'])) {
+            if ($extra['modal_eskalasi'] === 'sudah') {
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+            } elseif ($extra['modal_eskalasi'] === 'belum') {
+                $this->db->where('t.escalation_at IS NULL', null, false);
             }
         }
 
@@ -513,6 +526,10 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false); break;
             case 'esk_belum':
                 $this->db->where('t.escalation_at IS NULL', null, false); break;
+            case 'esk_gabungan':
+                // Menampilkan semua data eskalasi (baik sudah maupun belum)
+                // Filter sumber akan diaplikasikan dari modal_sumber
+                break;
             case 'esk_konsumen_sudah':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
@@ -549,6 +566,15 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.status_konsumen', 1);
             } elseif ($extra['modal_sumber'] === 'sosmed') {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal eskalasi filter untuk eskalasi gabungan modal
+        if (!empty($extra['modal_eskalasi'])) {
+            if ($extra['modal_eskalasi'] === 'sudah') {
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+            } elseif ($extra['modal_eskalasi'] === 'belum') {
+                $this->db->where('t.escalation_at IS NULL', null, false);
             }
         }
 

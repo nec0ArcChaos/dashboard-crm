@@ -231,11 +231,17 @@ class Dashboard extends CI_Controller {
         // Get modal_sumber filter untuk verifikasi modal
         $modal_sumber = $this->input->get('modal_sumber');
 
+        // Get modal_eskalasi filter untuk eskalasi gabungan modal
+        $modal_eskalasi = $this->input->get('modal_eskalasi');
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
         if ($modal_sumber && $modal_sumber !== 'all') {
             $extra['modal_sumber'] = $modal_sumber;
+        }
+        if ($modal_eskalasi && $modal_eskalasi !== 'all') {
+            $extra['modal_eskalasi'] = $modal_eskalasi;
         }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
