@@ -69,9 +69,44 @@ new Chart('chartVerifSumber', {
   },
   options:{
     responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
+    plugins:{
+      legend:{
+        display:true,
+        position:'bottom',
+        labels:{
+          boxWidth:10,
+          font:{size:11},
+          usePointStyle:true,
+          padding:12,
+          cursor:'pointer'
+        },
+        onClick:(e, legendItem, chart) => {
+          e.native.stopImmediatePropagation();
+          const datasetIndex = legendItem.datasetIndex; // 0 = terverifikasi, 1 = belum
+          // Buka modal untuk menampilkan semua data (konsumen + sosmed) berdasarkan status
+          if (datasetIndex === 0) {
+            openModal('verif_terverifikasi');
+          } else {
+            openModal('verif_belum');
+          }
+        }
+      }
+    },
     scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#E4E8F0'}} },
-    onClick:(e,els)=>{ if(els.length) openModal(els[0].datasetIndex===0?'verif_terverifikasi':'verif_belum'); }
+    onClick:(e,els)=>{
+      if(els.length) {
+        const barIndex = els[0].index;            // 0 = konsumen, 1 = sosmed
+        const datasetIndex = els[0].datasetIndex; // 0 = terverifikasi, 1 = belum
+
+        if (barIndex === 0) {
+          // Dari Konsumen
+          openModal(datasetIndex === 0 ? 'verif_konsumen' : 'verif_konsumen_belum');
+        } else {
+          // Dari Sosmed
+          openModal(datasetIndex === 0 ? 'verif_sosmed_v' : 'verif_sosmed_b');
+        }
+      }
+    }
   }
 });
 
@@ -209,9 +244,11 @@ if (slEl) {
 // ============================================================
 const bsModal = new bootstrap.Modal(document.getElementById('detailModal'));
 let _currentModal = {};
+let _modalSumberFilter = 'all'; // Untuk filter sumber di dalam modal (all, konsumen, sosmed)
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
+  _modalSumberFilter = 'all'; // Reset filter sumber
   document.getElementById('modalTitle').textContent = 'Memuat data...';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
@@ -230,6 +267,7 @@ function loadModalPage(page) {
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
     divisi_filter: filterGlobal.divisi,
+    modal_sumber: _modalSumberFilter, // Filter sumber di dalam modal
   });
 
   const fetchUrl = BASE_URL + 'dashboard/modal_detail?' + params.toString();
@@ -256,6 +294,7 @@ function loadModalPage(page) {
         verif_terverifikasi: `Komplain Terverifikasi (${res.total.toLocaleString('id')})`,
         verif_belum:         `Belum Terverifikasi (${res.total.toLocaleString('id')})`,
         verif_konsumen:      `Konsumen Terverifikasi (${res.total.toLocaleString('id')})`,
+        verif_konsumen_belum: `Konsumen Belum Verifikasi (${res.total.toLocaleString('id')})`,
         verif_sosmed_v:      `Sosmed Terverifikasi (${res.total.toLocaleString('id')})`,
         verif_sosmed_b:      `Sosmed Belum Verifikasi (${res.total.toLocaleString('id')})`,
         esk_sudah:           `Sudah Eskalasi (${res.total.toLocaleString('id')})`,
@@ -270,8 +309,23 @@ function loadModalPage(page) {
         return;
       }
 
+      // Render filter buttons untuk verifikasi modal (jika needed)
+      const isVerifModal = ['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type);
+      const needsSumberFilter = ['verif_terverifikasi', 'verif_belum'].includes(_currentModal.type);
+
+      let filterButtonsHtml = '';
+      if (needsSumberFilter) {
+        filterButtonsHtml = `
+          <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="btn btn-sm ${_modalSumberFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('all')">Semua Sumber</button>
+            <button class="btn btn-sm ${_modalSumberFilter === 'konsumen' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('konsumen')">Konsumen</button>
+            <button class="btn btn-sm ${_modalSumberFilter === 'sosmed' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('sosmed')">Sosmed</button>
+          </div>
+        `;
+      }
+
       // Render tabel
-      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+      let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
@@ -294,7 +348,7 @@ function loadModalPage(page) {
 
       // Show drilldown button untuk modal verifikasi
       const drilldownBtn = document.getElementById('btnDrilldown');
-      if (['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type)) {
+      if (isVerifModal) {
         drilldownBtn.style.display = 'inline-block';
       } else {
         drilldownBtn.style.display = 'none';
@@ -308,6 +362,12 @@ function loadModalPage(page) {
       document.getElementById('modalLoading').style.display = 'none';
       document.getElementById('modalContent').innerHTML = '<p class="text-danger">Koneksi error: ' + err.message + '</p>';
     });
+}
+
+// Function untuk set sumber filter dan reload modal
+function setSumberFilter(sumber) {
+  _modalSumberFilter = sumber;
+  loadModalPage(1); // Reload halaman 1 dengan filter baru
 }
 
 function getBadgeClass(status_id) {

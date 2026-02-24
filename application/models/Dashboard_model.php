@@ -52,12 +52,12 @@ class Dashboard_model extends CI_Model {
     }
 
     /**
-     * Komplain terverifikasi (verified_at IS NOT NULL)
+     * Komplain terverifikasi (status != 1)
      */
     public function get_terverifikasi($filter = []) {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->where('t.verified_at IS NOT NULL', null, false);
+        $this->db->where('t.status !=', 1);
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
             @$filter['sumber'], @$filter['divisi']
@@ -66,12 +66,12 @@ class Dashboard_model extends CI_Model {
     }
 
     /**
-     * Komplain belum terverifikasi
+     * Komplain belum terverifikasi (status = 1 = waiting)
      */
     public function get_belum_verifikasi($filter = []) {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->where('t.verified_at IS NULL', null, false);
+        $this->db->where('t.status', 1);
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
             @$filter['sumber'], @$filter['divisi']
@@ -81,6 +81,8 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Data verifikasi per sumber (konsumen vs sosmed)
+     * Belum verifikasi = status = 1 (Waiting) ONLY
+     * Terverifikasi = status != 1 (sudah di-handle oleh CRM)
      * Return array: [ 'konsumen' => ['terverifikasi'=>n, 'belum'=>n], 'sosmed' => [...] ]
      */
     public function get_verifikasi_per_sumber($filter = []) {
@@ -89,35 +91,35 @@ class Dashboard_model extends CI_Model {
             'sosmed'   => ['terverifikasi' => 0, 'belum' => 0],
         ];
 
-        // Konsumen terverifikasi
+        // Konsumen terverifikasi (status != 1)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
-        $this->db->where('t.verified_at IS NOT NULL', null, false);
+        $this->db->where('t.status !=', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['terverifikasi'] = $this->db->count_all_results();
 
-        // Konsumen belum terverifikasi
+        // Konsumen belum terverifikasi (status = 1 = waiting)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
-        $this->db->where('t.verified_at IS NULL', null, false);
+        $this->db->where('t.status', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['belum'] = $this->db->count_all_results();
 
-        // Sosmed terverifikasi
+        // Sosmed terverifikasi (status != 1)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-        $this->db->where('t.verified_at IS NOT NULL', null, false);
+        $this->db->where('t.status !=', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['sosmed']['terverifikasi'] = $this->db->count_all_results();
 
-        // Sosmed belum terverifikasi
+        // Sosmed belum terverifikasi (status = 1 = waiting)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-        $this->db->where('t.verified_at IS NULL', null, false);
+        $this->db->where('t.status', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['sosmed']['belum'] = $this->db->count_all_results();
 
@@ -349,26 +351,30 @@ class Dashboard_model extends CI_Model {
 
         switch ($type) {
             case 'verif_terverifikasi':
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_belum':
-                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1);
+                break;
+            case 'verif_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'esk_sudah':
@@ -389,6 +395,15 @@ class Dashboard_model extends CI_Model {
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
+        }
+
+        // Apply modal sumber filter untuk verifikasi modal
+        if (!empty($extra['modal_sumber'])) {
+            if ($extra['modal_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
         }
 
         // Apply global filter
@@ -415,26 +430,29 @@ class Dashboard_model extends CI_Model {
 
         switch ($type) {
             case 'verif_terverifikasi':
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_belum':
-                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1); break;
+            case 'verif_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where('t.status !=', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where('t.status', 1);
                 $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'esk_sudah':
@@ -453,6 +471,15 @@ class Dashboard_model extends CI_Model {
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
+        }
+
+        // Apply modal sumber filter untuk verifikasi modal
+        if (!empty($extra['modal_sumber'])) {
+            if ($extra['modal_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
         }
 
         if (!empty($filter['date_from'])) {

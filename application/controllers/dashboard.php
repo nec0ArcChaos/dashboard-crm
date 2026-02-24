@@ -211,9 +211,15 @@ class Dashboard extends CI_Controller {
         $offset    = ($page - 1) * $per_page;
         $filter    = $this->_get_filter();
 
+        // Get modal_sumber filter untuk verifikasi modal
+        $modal_sumber = $this->input->get('modal_sumber');
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
+        if ($modal_sumber && $modal_sumber !== 'all') {
+            $extra['modal_sumber'] = $modal_sumber;
+        }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
         $total = $this->dashboard_m->count_detail_modal($type, $extra, $filter);
