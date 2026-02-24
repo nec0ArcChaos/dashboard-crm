@@ -400,8 +400,20 @@ function loadDrilldownPage(page) {
         return;
       }
 
+      // Mapping status_id ke badge class
+      const statusBadgeMap = {
+        2: 'waiting',   // Waiting Head Div
+        3: 'reject',    // Reject Level 1
+        4: 'working',   // Working On
+        5: 'reject',    // Reject Level 2
+        6: 'done',      // Done
+        7: 'reject',    // Unsolved
+        8: 'waiting',   // Rescheduled
+        9: 'waiting',   // Rescheduled 2
+      };
+
       // Render tabel dengan kolom: No. Komplain, Konsumen, Lokasi, Jenis, Status
-      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.<br/><small style="color:#999">Hanya menampilkan data dengan status: Reject, Working On, Done, atau Unsolved</small></p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
@@ -413,13 +425,13 @@ function loadDrilldownPage(page) {
           </tr></thead><tbody>`;
 
       res.data.forEach(row => {
-        const statusBadgeClass = row.status.includes('Terverifikasi') ? 'done' : 'waiting';
+        const badgeClass = statusBadgeMap[row.status_id] || 'working';
         html += `<tr>
-          <td><code style="font-size:11px">${row.id_task}</code></td>
+          <td><code style="font-size:11px;font-weight:600">${row.id_task}</code></td>
           <td><small>${row.konsumen || '-'}</small></td>
           <td><small>${row.lokasi || '-'}</small></td>
           <td><small>${row.jenis || '-'}</small></td>
-          <td><span class="badge-status badge-${statusBadgeClass}" style="font-size:10px">${row.status}</span></td>
+          <td><span class="badge-status badge-${badgeClass}" style="font-size:10px">${row.status}</span></td>
         </tr>`;
       });
       html += '</tbody></table></div>';

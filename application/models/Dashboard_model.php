@@ -350,21 +350,26 @@ class Dashboard_model extends CI_Model {
         switch ($type) {
             case 'verif_terverifikasi':
                 $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_belum':
                 $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
                 break;
             case 'esk_sudah':
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
@@ -410,18 +415,28 @@ class Dashboard_model extends CI_Model {
 
         switch ($type) {
             case 'verif_terverifikasi':
-                $this->db->where('t.verified_at IS NOT NULL', null, false); break;
+                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
+                break;
             case 'verif_belum':
-                $this->db->where('t.verified_at IS NULL', null, false); break;
+                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
+                break;
             case 'verif_konsumen':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.verified_at IS NOT NULL', null, false); break;
+                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
+                break;
             case 'verif_sosmed_v':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NOT NULL', null, false); break;
+                $this->db->where('t.verified_at IS NOT NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
+                break;
             case 'verif_sosmed_b':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.verified_at IS NULL', null, false); break;
+                $this->db->where('t.verified_at IS NULL', null, false);
+                $this->db->where_not_in('t.status', [1, 2]); // Exclude Waiting & Waiting Head Div
+                break;
             case 'esk_sudah':
                 $this->db->where('t.escalation_at IS NOT NULL', null, false); break;
             case 'esk_belum':
@@ -474,7 +489,7 @@ class Dashboard_model extends CI_Model {
     /**
      * Ambil detail komplain untuk drilldown verifikasi
      * Kolom: id_task, konsumen, project, category, status
-     * Status logic: jika status = 1 (waiting) -> "Belum Terverifikasi", else -> "Terverifikasi"
+     * Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
      */
     public function get_drilldown_verifikasi($filter = [], $limit = 100, $offset = 0) {
         $this->db->select('
@@ -485,11 +500,16 @@ class Dashboard_model extends CI_Model {
             t.id_category,
             c.category as jenis_kategori,
             t.status,
+            s.status as status_label,
             t.verified_at,
             t.created_at
         ');
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('cm_status s', 's.id = t.status', 'left');
+
+        // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
+        $this->db->where_not_in('t.status', [1, 2, 8, 9]);
 
         // Apply global filters
         if (!empty($filter['date_from'])) {
@@ -512,12 +532,9 @@ class Dashboard_model extends CI_Model {
 
         $rows = $this->db->get()->result_array();
 
-        // Format hasil dengan status verifikasi
+        // Format hasil dengan status label dari cm_status
         $result = [];
         foreach ($rows as $row) {
-            // Status verifikasi: jika status = 1 (waiting), maka "Belum Terverifikasi", sebaliknya "Terverifikasi"
-            $verif_status = ((int)$row['status'] === 1) ? 'Belum Terverifikasi' : 'Terverifikasi';
-
             $result[] = [
                 'id_task'         => $row['id_task'],
                 'konsumen'        => $row['konsumen'],
@@ -525,8 +542,8 @@ class Dashboard_model extends CI_Model {
                 'id_project'      => $row['id_project'],
                 'jenis'           => $row['jenis_kategori'],
                 'id_category'     => $row['id_category'],
-                'status'          => $verif_status,
-                'status_raw'      => (int)$row['status'],
+                'status'          => $row['status_label'] ?: 'Unknown',
+                'status_id'       => (int)$row['status'],
                 'verified_at'     => $row['verified_at'],
                 'created_at'      => $row['created_at']
             ];
@@ -537,10 +554,14 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Count total komplain untuk drilldown verifikasi (pagination)
+     * Filter: Exclude status 1, 2, 8, 9 (Waiting, Waiting Head Div, Rescheduled, Rescheduled 2)
      */
     public function count_drilldown_verifikasi($filter = []) {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+
+        // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
+        $this->db->where_not_in('t.status', [1, 2, 8, 9]);
 
         if (!empty($filter['date_from'])) {
             $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
