@@ -24,9 +24,8 @@ class Dashboard extends CI_Controller {
     {
         // Ambil filter dari POST (saat form submit) atau default
         $filter = [
-            'date_from' => $this->input->post('date_from') ?: '2025-01-01',
+            'date_from' => $this->input->post('date_from') ?: '2024-01-01',
             'date_to'   => $this->input->post('date_to')   ?: date('Y-m-d'),
-            'sumber'    => $this->input->post('sumber')    ?: 'all',
             'divisi'    => $this->input->post('divisi')    ?: 'all',
         ];
 
@@ -41,20 +40,20 @@ class Dashboard extends CI_Controller {
         $max = $min = null;
         $below = $above = $total_ket = 0;
         foreach ($ketepatan as $d) {
-            $pct = $d['total'] > 0 ? round($d['ontime']/$d['total']*100) : 0;
+            $pct = $d['total'] > 0 ? round($d['ontime'] / $d['total'] * 100) : 0;
             $total_ket += $d['total'];
-            if ($max === null || $pct > $max['pct']) $max = ['pct'=>$pct,'divisi'=>$d['divisi']];
-            if ($min === null || $pct < $min['pct']) $min = ['pct'=>$pct,'divisi'=>$d['divisi']];
+            if ($max === null || $pct > $max['pct']) $max = ['pct' => $pct, 'divisi' => $d['divisi']];
+            if ($min === null || $pct < $min['pct']) $min = ['pct' => $pct, 'divisi' => $d['divisi']];
             $pct >= 80 ? $above++ : $below++;
         }
 
         // Hitung summary status
-        $total_esk = array_sum(array_column($status_list,'qty'));
+        $total_esk = array_sum(array_column($status_list, 'qty'));
         $done = $reject = $in_progress = 0;
         foreach ($status_list as $s) {
-            if ($s['label'] === 'Done')   $done    += $s['qty'];
-            elseif ($s['label'] === 'Reject') $reject += $s['qty'];
-            else    $in_progress += $s['qty'];
+            if (strpos($s['label'], 'Done') !== false) $done += $s['qty'];
+            elseif (strpos($s['label'], 'Reject') !== false) $reject += $s['qty'];
+            else $in_progress += $s['qty'];
         }
 
         $data = [
@@ -68,9 +67,9 @@ class Dashboard extends CI_Controller {
             'eskalasi_trend' => $eskalasi_trend,
 
             'ketepatan_summary' => [
-                'max_pct'      => $max['pct']    ?? 0,
+                'max_pct'      => $max['pct'] ?? 0,
                 'max_divisi'   => $max['divisi'] ?? '-',
-                'min_pct'      => $min['pct']    ?? 0,
+                'min_pct'      => $min['pct'] ?? 0,
                 'min_divisi'   => $min['divisi'] ?? '-',
                 'below_target' => $below,
                 'above_target' => $above,
@@ -82,9 +81,9 @@ class Dashboard extends CI_Controller {
                 'done'           => $done,
                 'reject'         => $reject,
                 'in_progress'    => $in_progress,
-                'pct_done'       => $total_esk > 0 ? round($done/$total_esk*100)        : 0,
-                'pct_reject'     => $total_esk > 0 ? round($reject/$total_esk*100)      : 0,
-                'pct_in_progress'=> $total_esk > 0 ? round($in_progress/$total_esk*100) : 0,
+                'pct_done'       => $total_esk > 0 ? round($done / $total_esk * 100) : 0,
+                'pct_reject'     => $total_esk > 0 ? round($reject / $total_esk * 100) : 0,
+                'pct_in_progress' => $total_esk > 0 ? round($in_progress / $total_esk * 100) : 0,
             ],
         ];
 
@@ -100,9 +99,8 @@ class Dashboard extends CI_Controller {
         $type  = $this->input->post('type');
         $extra = json_decode($this->input->post('extra'), true) ?: [];
         $filter = [
-            'date_from' => $this->input->post('date_from') ?: '2025-01-01',
+            'date_from' => $this->input->post('date_from') ?: '2024-01-01',
             'date_to'   => $this->input->post('date_to')   ?: date('Y-m-d'),
-            'sumber'    => 'all',
             'divisi'    => $extra['divisi'] ?? 'all',
         ];
 
@@ -112,49 +110,45 @@ class Dashboard extends CI_Controller {
         switch ($type) {
             case 'verifTerverifikasi':
                 $title = 'Komplain Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status_verif'=>'terverifikasi']);
+                $rows  = $this->Crm_model->get_detail_komplain($filter, ['verified_by' => 1]);
                 break;
             case 'verifBelum':
                 $title = 'Belum Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status_verif'=>'belum']);
-                break;
-            case 'verifKonsumen':
-                $title = 'Komplain Konsumen — Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['sumber'=>'konsumen']);
-                break;
-            case 'verifSosmedV':
-                $title = 'Sosmed Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['sumber'=>'sosmed','status_verif'=>'terverifikasi']);
-                break;
-            case 'verifSosmedB':
-                $title = 'Sosmed Belum Verifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['sumber'=>'sosmed','status_verif'=>'belum']);
+                $rows  = $this->Crm_model->get_detail_komplain($filter, ['verified_by' => 0]);
                 break;
             case 'eskSudah':
-                $title = 'Sudah Eskalasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['eskalasi'=>1]);
+                $title = 'Sudah Diproses (Status > Waiting)';
+                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status >' => 1]);
                 break;
             case 'eskBelum':
-                $title = 'Belum Eskalasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['eskalasi'=>0]);
+                $title = 'Belum Diproses (Waiting)';
+                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status' => 1]);
                 break;
             case 'divisi':
-                $title = ($extra['divisi'] ?? '-') . ' — Ketepatan Waktu';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['divisi'=>$extra['divisi']??'']);
+                $title = (isset($extra['divisi']) && $extra['divisi'] !== 'all' ? $extra['divisi'] : 'Semua Divisi') . ' — Ketepatan Waktu';
+                if (isset($extra['divisi']) && $extra['divisi'] !== 'all') {
+                    $rows = $this->Crm_model->get_detail_komplain($filter, ['divisi' => $extra['divisi']]);
+                } else {
+                    $rows = $this->Crm_model->get_detail_komplain($filter, []);
+                }
                 break;
             case 'status':
-                $title = 'Status: ' . ($extra['label'] ?? '-');
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status_komplain'=>$extra['label']??'']);
+                $title = 'Status: ' . (isset($extra['label']) ? $extra['label'] : '-');
+                if (isset($extra['status']) && !empty($extra['status'])) {
+                    $rows = $this->Crm_model->get_detail_komplain($filter, ['status' => (int)$extra['status']]);
+                } else {
+                    $rows = $this->Crm_model->get_detail_komplain($filter, []);
+                }
                 break;
         }
 
-        // Render tabel HTML (bisa juga pakai view partial)
+        // Render tabel HTML
         $html  = $this->_render_modal_table($rows);
 
         $response = [
             'title'     => $title . ' (' . number_format(count($rows)) . ')',
             'html'      => $html,
-            'csrf_hash' => $this->security->get_csrf_hash(), // refresh token
+            'csrf_hash' => $this->security->get_csrf_hash(),
         ];
 
         $this->output
@@ -181,21 +175,11 @@ class Dashboard extends CI_Controller {
             return '<div class="alert alert-info">Tidak ada data ditemukan.</div>';
         }
 
-        $badge_map = [
-            'Done'       => 'success',
-            'Reject'     => 'danger',
-            'Working On' => 'primary',
-            'Menunggu'   => 'warning',
-            'On Time'    => 'success',
-            'Late'       => 'danger',
-        ];
-
         $th = '<thead class="table-light">
             <tr>
-                <th>No. Komplain</th>
+                <th>ID Task</th>
                 <th>Konsumen</th>
-                <th>Lokasi</th>
-                <th>Divisi</th>
+                <th>Lokasi/Blok</th>
                 <th>Jenis</th>
                 <th>Tgl Masuk</th>
                 <th>Status</th>
@@ -204,16 +188,15 @@ class Dashboard extends CI_Controller {
 
         $tbody = '';
         foreach ($rows as $r) {
-            $status  = htmlspecialchars($r['status'] ?? '-');
-            $badge   = $badge_map[$status] ?? 'secondary';
+            $status_label  = htmlspecialchars($r['status_label'] ?? '-');
+            $status_color  = htmlspecialchars($r['color'] ?? '#6b7280');
             $tbody  .= '<tr>
-                <td style="font-family:monospace;font-size:11px;color:#9ca3af">' . htmlspecialchars($r['no_komplain'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['nama_konsumen'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['lokasi'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['divisi'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['jenis_komplain'] ?? '-') . '</td>
-                <td style="font-family:monospace;font-size:11px">' . htmlspecialchars($r['tgl_masuk'] ?? '-') . '</td>
-                <td><span class="badge bg-' . $badge . '-subtle text-' . $badge . '">' . $status . '</span></td>
+                <td style="font-family:monospace;font-size:11px;color:#9ca3af">' . htmlspecialchars($r['id_task'] ?? '-') . '</td>
+                <td>' . htmlspecialchars($r['konsumen'] ?? '-') . '</td>
+                <td>' . htmlspecialchars($r['blok'] ?? $r['project'] ?? '-') . '</td>
+                <td title="' . htmlspecialchars($r['description'] ?? '') . '">' . htmlspecialchars(substr($r['description'] ?? '-', 0, 40)) . '</td>
+                <td style="font-family:monospace;font-size:11px">' . date('d M Y H:i', strtotime($r['created_at'] ?? 'now')) . '</td>
+                <td><span class="badge" style="background-color:' . $status_color . ';color:#fff">' . $status_label . '</span></td>
             </tr>';
         }
 

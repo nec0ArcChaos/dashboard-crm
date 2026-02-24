@@ -82,15 +82,6 @@
         </div>
         <div class="col-auto"><div class="vr" style="height:28px"></div></div>
         <div class="col-auto d-flex align-items-center gap-2">
-          <small class="text-muted">Sumber</small>
-          <select name="sumber" id="filterSumber" class="form-select form-select-sm" style="width:160px">
-            <option value="all" <?= $filter['sumber']==='all'?'selected':'' ?>>Semua Sumber</option>
-            <option value="konsumen" <?= $filter['sumber']==='konsumen'?'selected':'' ?>>Dari Konsumen</option>
-            <option value="sosmed"   <?= $filter['sumber']==='sosmed'?'selected':'' ?>>Dari Sosmed</option>
-          </select>
-        </div>
-        <div class="col-auto"><div class="vr" style="height:28px"></div></div>
-        <div class="col-auto d-flex align-items-center gap-2">
           <small class="text-muted">Divisi</small>
           <select name="divisi" id="filterDivisi" class="form-select form-select-sm" style="width:180px">
             <option value="all" <?= $filter['divisi']==='all'?'selected':'' ?>>Semua Divisi</option>
@@ -139,10 +130,10 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card kpi-card stripe-danger h-100 p-3">
-        <div class="kpi-label">% Verifikasi Sosmed</div>
-        <div class="kpi-value text-danger"><?= $verifikasi['pct_sosmed'] ?>%</div>
-        <span class="badge bg-danger-subtle text-danger">🚨 Di bawah target</span>
+      <div class="card kpi-card stripe-success h-100 p-3">
+        <div class="kpi-label">Target Verifikasi</div>
+        <div class="kpi-value text-success"><?= $verifikasi['pct_terverifikasi'] ?>%</div>
+        <span class="badge bg-success-subtle text-success">✓ Monitoring</span>
       </div>
     </div>
   </div>
@@ -177,23 +168,17 @@
           <small class="text-muted">Per sumber & status</small>
         </div>
         <div class="card-body p-2">
-          <div class="status-row" onclick="openModal('verifKonsumen')">
+          <div class="status-row" onclick="openModal('verifTerverifikasi')">
             <div class="status-dot" style="background:#10b981"></div>
-            <div class="flex-grow-1 fw-medium" style="font-size:12px">Dari Konsumen</div>
-            <span class="fw-bold" style="font-family:monospace;font-size:13px"><?= number_format($verifikasi['konsumen_total']) ?></span>
-            <span class="badge bg-success-subtle text-success ms-1">100%</span>
+            <div class="flex-grow-1 fw-medium" style="font-size:12px">Terverifikasi</div>
+            <span class="fw-bold" style="font-family:monospace;font-size:13px"><?= number_format($verifikasi['terverifikasi']) ?></span>
+            <span class="badge bg-success-subtle text-success ms-1"><?= $verifikasi['pct_terverifikasi'] ?>%</span>
           </div>
-          <div class="status-row" onclick="openModal('verifSosmedV')">
-            <div class="status-dot" style="background:#1a56db"></div>
-            <div class="flex-grow-1 fw-medium" style="font-size:12px">Sosmed — Terverifikasi</div>
-            <span class="fw-bold" style="font-family:monospace;font-size:13px"><?= number_format($verifikasi['sosmed_terverifikasi']) ?></span>
-            <span class="badge bg-danger-subtle text-danger ms-1"><?= $verifikasi['pct_sosmed'] ?>%</span>
-          </div>
-          <div class="status-row" onclick="openModal('verifSosmedB')">
+          <div class="status-row" onclick="openModal('verifBelum')">
             <div class="status-dot" style="background:#ef4444"></div>
-            <div class="flex-grow-1 fw-medium" style="font-size:12px">Sosmed — Belum Verf.</div>
-            <span class="fw-bold" style="font-family:monospace;font-size:13px"><?= number_format($verifikasi['sosmed_belum']) ?></span>
-            <span class="badge bg-danger-subtle text-danger ms-1"><?= 100 - $verifikasi['pct_sosmed'] ?>%</span>
+            <div class="flex-grow-1 fw-medium" style="font-size:12px">Belum Verifikasi</div>
+            <span class="fw-bold" style="font-family:monospace;font-size:13px"><?= number_format($verifikasi['belum']) ?></span>
+            <span class="badge bg-danger-subtle text-danger ms-1"><?= $verifikasi['pct_belum'] ?>%</span>
           </div>
         </div>
       </div>
@@ -511,21 +496,20 @@ setInterval(updateClock, 1000); updateClock();
 Chart.defaults.font.family = 'system-ui, sans-serif';
 Chart.defaults.plugins.legend.display = false;
 
-// ─── CHART 1: Verifikasi per Sumber ───────────────────────
+// ─── CHART 1: Verifikasi Status ───────────────────────────
 new Chart(document.getElementById('chartVerifSumber'), {
   type: 'bar',
   data: {
-    labels: ['Dari Konsumen', 'Dari Sosmed'],
+    labels: ['Terverifikasi', 'Belum Verif.'],
     datasets: [
-      { label:'Terverifikasi', data:[PHP.verifikasi.konsumen_total, PHP.verifikasi.sosmed_terverifikasi], backgroundColor:'#10b981', borderRadius:6 },
-      { label:'Belum Verif.',  data:[0, PHP.verifikasi.sosmed_belum],                                    backgroundColor:'#ef4444', borderRadius:6 },
+      { label:'Total', data:[PHP.verifikasi.terverifikasi, PHP.verifikasi.belum], backgroundColor:['#10b981','#ef4444'], borderRadius:6 },
     ]
   },
   options: {
     responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display:true, position:'bottom', labels:{boxWidth:10,font:{size:11}} } },
-    scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#e5e7eb'}} },
-    onClick:(e,els)=>{ if(els.length) openModal(els[0].datasetIndex===0?'verifTerverifikasi':'verifBelum'); }
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{grid:{display:false}}, y:{grid:{color:'#e5e7eb'}} },
+    onClick:(e,els)=>{ if(els.length) openModal(els[0].index===0?'verifTerverifikasi':'verifBelum'); }
   }
 });
 
