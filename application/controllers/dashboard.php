@@ -1,207 +1,276 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed');
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Controller  : Dashboard
- * File        : application/controllers/Dashboard.php
- * URL         : /dashboard/crm
- * Requires    : application/models/Crm_model.php
+ * Dashboard Controller
+ * MVC CodeIgniter 3 — CRM Monitoring Komplain Konsumen
  */
 class Dashboard extends CI_Controller {
 
-    public function __construct()
-    {
+    public function __construct() {
         parent::__construct();
-        $this->load->model('Crm_model');
-        $this->load->helper(['url', 'form']);
-        $this->load->library(['session', 'form_validation']);
-
-        // Proteksi login — sesuaikan dengan sistem auth Anda
-        // if (!$this->session->userdata('logged_in')) redirect('auth/login');
+        $this->load->model('Dashboard_model', 'dashboard_m');
+        $this->load->helper(['url', 'date']);
+        $this->load->library('session');
     }
 
-    // ─── HALAMAN UTAMA ──────────────────────────────────────
-    public function crm()
-    {
-        // Ambil filter dari POST (saat form submit) atau default
-        $filter = [
-            'date_from' => $this->input->post('date_from') ?: '2024-01-01',
-            'date_to'   => $this->input->post('date_to')   ?: date('Y-m-d'),
-            'divisi'    => $this->input->post('divisi')    ?: 'all',
+    // ============================================================
+    // Halaman Utama Dashboard
+    // ============================================================
+    public function index() {
+        // Ambil filter dari GET, set default
+        $filter = $this->_get_filter();
+
+        // ---- SECTION 01: VERIFIKASI ----
+        $total_komplain   = $this->dashboard_m->get_total_komplain($filter);
+        $terverifikasi    = $this->dashboard_m->get_terverifikasi($filter);
+        $belum_verifikasi = $this->dashboard_m->get_belum_verifikasi($filter);
+        $verif_per_sumber = $this->dashboard_m->get_verifikasi_per_sumber($filter);
+
+        $pct_verif = $total_komplain > 0
+            ? round(($terverifikasi / $total_komplain) * 100)
+            : 0;
+
+        $total_sosmed      = $verif_per_sumber['sosmed']['terverifikasi'] + $verif_per_sumber['sosmed']['belum'];
+        $pct_verif_sosmed  = $total_sosmed > 0
+            ? round(($verif_per_sumber['sosmed']['terverifikasi'] / $total_sosmed) * 100)
+            : 0;
+        $pct_konsumen_verif = ($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum']) > 0
+            ? round(($verif_per_sumber['konsumen']['terverifikasi'] /
+              ($verif_per_sumber['konsumen']['terverifikasi'] + $verif_per_sumber['konsumen']['belum'])) * 100)
+            : 0;
+
+        // ---- SECTION 02: ESKALASI ----
+        $sudah_eskalasi = $this->dashboard_m->get_sudah_eskalasi($filter);
+        $belum_eskalasi = $this->dashboard_m->get_belum_eskalasi($filter);
+        $rate_eskalasi  = $total_komplain > 0
+            ? round(($sudah_eskalasi / $total_komplain) * 100)
+            : 0;
+
+        $trend_eskalasi_raw = $this->dashboard_m->get_trend_eskalasi($filter);
+        $trend_labels = [];
+        $trend_data   = [];
+        foreach ($trend_eskalasi_raw as $row) {
+            $ts = strtotime($row['bulan'] . '-01');
+            $trend_labels[] = date('M', $ts) . "'" . date('y', $ts); // e.g. Jan'25
+            $trend_data[]   = (int)$row['total'];
+        }
+
+        // ---- SECTION 03: KETEPATAN WAKTU ----
+        $ketepatan_raw = $this->dashboard_m->get_ketepatan_waktu($filter);
+        $ketepatan     = [];
+        $max_ontime_pct = 0;
+        $min_ontime_pct = 100;
+        $max_divisi = '';
+        $min_divisi = '';
+        $total_ketepatan = 0;
+        $divisi_bawah_80 = 0;
+        $divisi_atas_80  = 0;
+
+        foreach ($ketepatan_raw as $row) {
+            $pct = $row['total'] > 0 ? round(($row['ontime'] / $row['total']) * 100) : 0;
+            $ketepatan[] = [
+                'divisi' => $row['divisi'],
+                'total'  => $row['total'],
+                'ontime' => $row['ontime'],
+                'late'   => $row['late'],
+                'pct'    => $pct,
+            ];
+            $total_ketepatan += $row['total'];
+            if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['divisi']; }
+            if ($pct < $min_ontime_pct) { $min_ontime_pct = $pct; $min_divisi = $row['divisi']; }
+            if ($pct >= 80) $divisi_atas_80++; else $divisi_bawah_80++;
+        }
+
+        // ---- SECTION 04: RATING ----
+        $rating_summary    = $this->dashboard_m->get_rating_summary();
+        $distribusi_rating = $this->dashboard_m->get_distribusi_rating();
+
+        // ---- SECTION 05: STATUS ----
+        $status_raw = $this->dashboard_m->get_status_komplain($filter);
+
+        // Peta warna dan badge per status_id
+        $status_color_map = [
+            1 => ['color' => '#6B7280', 'badge' => 'waiting'],   // Waiting
+            2 => ['color' => '#D97706', 'badge' => 'waiting'],   // Waiting Head Div
+            3 => ['color' => '#E02424', 'badge' => 'reject'],    // Reject Level 1
+            4 => ['color' => '#1A56DB', 'badge' => 'working'],   // Working On
+            5 => ['color' => '#F05252', 'badge' => 'reject'],    // Reject Level 2
+            6 => ['color' => '#0E9F6E', 'badge' => 'done'],      // Done
+            7 => ['color' => '#E02424', 'badge' => 'reject'],    // Unsolved
+            8 => ['color' => '#9061F9', 'badge' => 'waiting'],   // Rescheduled
+            9 => ['color' => '#F05252', 'badge' => 'waiting'],   // Rescheduled 2
         ];
 
-        // Ambil semua data dari model
-        $verifikasi = $this->Crm_model->get_verifikasi($filter);
-        $eskalasi   = $this->Crm_model->get_eskalasi($filter);
-        $ketepatan  = $this->Crm_model->get_ketepatan($filter);
-        $status_list = $this->Crm_model->get_status_list($filter);
-        $eskalasi_trend = $this->Crm_model->get_eskalasi_trend($filter);
+        $status_list  = [];
+        $total_done   = 0;
+        $total_reject = 0;
+        $total_inprog = 0;
 
-        // Hitung summary ketepatan
-        $max = $min = null;
-        $below = $above = $total_ket = 0;
-        foreach ($ketepatan as $d) {
-            $pct = $d['total'] > 0 ? round($d['ontime'] / $d['total'] * 100) : 0;
-            $total_ket += $d['total'];
-            if ($max === null || $pct > $max['pct']) $max = ['pct' => $pct, 'divisi' => $d['divisi']];
-            if ($min === null || $pct < $min['pct']) $min = ['pct' => $pct, 'divisi' => $d['divisi']];
-            $pct >= 80 ? $above++ : $below++;
+        foreach ($status_raw as $row) {
+            $id    = (int)$row['id'];
+            $color = isset($status_color_map[$id]) ? $status_color_map[$id]['color'] : '#6B7280';
+            $badge = isset($status_color_map[$id]) ? $status_color_map[$id]['badge'] : 'waiting';
+            $status_list[] = [
+                'id'    => $id,
+                'label' => $row['status'],
+                'qty'   => (int)$row['total'],
+                'color' => $color,
+                'badge' => $badge,
+            ];
+            if ($id == 6) $total_done   = (int)$row['total'];
+            if ($id == 3 || $id == 5 || $id == 7) $total_reject += (int)$row['total'];
+            if ($id == 4 || $id == 8 || $id == 9) $total_inprog += (int)$row['total'];
         }
 
-        // Hitung summary status
-        $total_esk = array_sum(array_column($status_list, 'qty'));
-        $done = $reject = $in_progress = 0;
-        foreach ($status_list as $s) {
-            if (strpos($s['label'], 'Done') !== false) $done += $s['qty'];
-            elseif (strpos($s['label'], 'Reject') !== false) $reject += $s['qty'];
-            else $in_progress += $s['qty'];
-        }
+        // Daftar divisi untuk dropdown filter
+        $list_divisi = $this->dashboard_m->get_list_divisi();
 
+        // Period label
+        $period_label = date('d-m-Y', strtotime($filter['date_from']))
+            . ' s.d ' .
+            date('d-m-Y', strtotime($filter['date_to']));
+
+        // ---- KIRIM KE VIEW ----
         $data = [
-            'filter'       => $filter,
-            'divisi_list'  => $this->Crm_model->get_divisi_list(),
+            // Filter
+            'filter'              => $filter,
+            'list_divisi'         => $list_divisi,
+            'period_label'        => $period_label,
 
-            'verifikasi'   => $verifikasi,
-            'eskalasi'     => $eskalasi,
-            'ketepatan'    => $ketepatan,
-            'status_list'  => $status_list,
-            'eskalasi_trend' => $eskalasi_trend,
+            // Section 01 Verifikasi
+            'total_komplain'      => $total_komplain,
+            'terverifikasi'       => $terverifikasi,
+            'belum_verifikasi'    => $belum_verifikasi,
+            'pct_verif'           => $pct_verif,
+            'verif_per_sumber'    => $verif_per_sumber,
+            'pct_verif_sosmed'    => $pct_verif_sosmed,
+            'pct_konsumen_verif'  => $pct_konsumen_verif,
+            'total_sosmed'        => $total_sosmed,
 
-            'ketepatan_summary' => [
-                'max_pct'      => $max['pct'] ?? 0,
-                'max_divisi'   => $max['divisi'] ?? '-',
-                'min_pct'      => $min['pct'] ?? 0,
-                'min_divisi'   => $min['divisi'] ?? '-',
-                'below_target' => $below,
-                'above_target' => $above,
-                'total'        => $total_ket,
-            ],
+            // Section 02 Eskalasi
+            'sudah_eskalasi'      => $sudah_eskalasi,
+            'belum_eskalasi'      => $belum_eskalasi,
+            'rate_eskalasi'       => $rate_eskalasi,
+            'trend_labels_json'   => json_encode(array_values($trend_labels)),
+            'trend_data_json'     => json_encode(array_values($trend_data)),
 
-            'status_summary' => [
-                'total'          => $total_esk,
-                'done'           => $done,
-                'reject'         => $reject,
-                'in_progress'    => $in_progress,
-                'pct_done'       => $total_esk > 0 ? round($done / $total_esk * 100) : 0,
-                'pct_reject'     => $total_esk > 0 ? round($reject / $total_esk * 100) : 0,
-                'pct_in_progress' => $total_esk > 0 ? round($in_progress / $total_esk * 100) : 0,
-            ],
+            // Section 03 Ketepatan Waktu
+            'ketepatan'           => $ketepatan,
+            'ketepatan_json'      => json_encode($ketepatan),
+            'max_ontime_pct'      => $max_ontime_pct,
+            'max_divisi'          => $max_divisi,
+            'min_ontime_pct'      => $min_ontime_pct,
+            'min_divisi'          => $min_divisi,
+            'total_ketepatan'     => $total_ketepatan,
+            'divisi_bawah_80'     => $divisi_bawah_80,
+            'divisi_atas_80'      => $divisi_atas_80,
+
+            // Section 04 Rating
+            'rating_summary'      => $rating_summary,
+            'distribusi_rating'   => $distribusi_rating,
+
+            // Section 05 Status
+            'status_list'         => $status_list,
+            'status_json'         => json_encode($status_list),
+            'total_done'          => $total_done,
+            'total_reject'        => $total_reject,
+            'total_inprog'        => $total_inprog,
+
+            // Verifikasi chart JSON
+            'verif_chart_json' => json_encode([
+                'konsumen_terverifikasi' => $verif_per_sumber['konsumen']['terverifikasi'],
+                'konsumen_belum'         => $verif_per_sumber['konsumen']['belum'],
+                'sosmed_terverifikasi'   => $verif_per_sumber['sosmed']['terverifikasi'],
+                'sosmed_belum'           => $verif_per_sumber['sosmed']['belum'],
+            ]),
+            'eskalasi_donut_json' => json_encode([
+                'sudah' => $sudah_eskalasi,
+                'belum' => $belum_eskalasi,
+            ]),
         ];
 
-        $this->load->view('dashboard/crm', $data);
+        $this->load->view('partials/header', $data);
+        $this->load->view('dashboard/index', $data);
+        $this->load->view('partials/footer', $data);
     }
 
-    // ─── AJAX DETAIL MODAL ──────────────────────────────────
-    public function crm_detail()
-    {
-        // Hanya terima AJAX POST
-        if (!$this->input->is_ajax_request()) show_404();
+    // ============================================================
+    // AJAX — Modal Detail Komplain
+    // ============================================================
+    public function modal_detail() {
+        $type      = $this->input->get_post('type');
+        $status_id = $this->input->get_post('status_id');
+        $divisi    = $this->input->get_post('divisi');
+        $page      = (int)$this->input->get_post('page') ?: 1;
+        $per_page  = 10;
+        $offset    = ($page - 1) * $per_page;
+        $filter    = $this->_get_filter();
 
-        $type  = $this->input->post('type');
-        $extra = json_decode($this->input->post('extra'), true) ?: [];
-        $filter = [
-            'date_from' => $this->input->post('date_from') ?: '2024-01-01',
-            'date_to'   => $this->input->post('date_to')   ?: date('Y-m-d'),
-            'divisi'    => $extra['divisi'] ?? 'all',
-        ];
+        $extra = [];
+        if ($status_id) $extra['status_id'] = $status_id;
+        if ($divisi)    $extra['divisi']     = $divisi;
 
-        $rows  = [];
-        $title = 'Detail Komplain';
+        $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
+        $total = $this->dashboard_m->count_detail_modal($type, $extra, $filter);
 
-        switch ($type) {
-            case 'verifTerverifikasi':
-                $title = 'Komplain Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['verified_by' => 1]);
-                break;
-            case 'verifBelum':
-                $title = 'Belum Terverifikasi';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['verified_by' => 0]);
-                break;
-            case 'eskSudah':
-                $title = 'Sudah Diproses (Status > Waiting)';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status >' => 1]);
-                break;
-            case 'eskBelum':
-                $title = 'Belum Diproses (Waiting)';
-                $rows  = $this->Crm_model->get_detail_komplain($filter, ['status' => 1]);
-                break;
-            case 'divisi':
-                $title = (isset($extra['divisi']) && $extra['divisi'] !== 'all' ? $extra['divisi'] : 'Semua Divisi') . ' — Ketepatan Waktu';
-                if (isset($extra['divisi']) && $extra['divisi'] !== 'all') {
-                    $rows = $this->Crm_model->get_detail_komplain($filter, ['divisi' => $extra['divisi']]);
+        // Format data untuk response JSON
+        $data = [];
+        foreach ($rows as $row) {
+            // Tentukan ketepatan waktu
+            $waktu_status = '-';
+            if ($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00') {
+                if ($row['due_date'] && $row['due_date'] !== '0000-00-00') {
+                    $done = strtotime($row['done_date']);
+                    $due  = strtotime($row['due_date'] . ' 23:59:59');
+                    $waktu_status = ($done <= $due) ? 'On Time' : 'Late';
                 } else {
-                    $rows = $this->Crm_model->get_detail_komplain($filter, []);
+                    $waktu_status = 'Done';
                 }
-                break;
-            case 'status':
-                $title = 'Status: ' . (isset($extra['label']) ? $extra['label'] : '-');
-                if (isset($extra['status']) && !empty($extra['status'])) {
-                    $rows = $this->Crm_model->get_detail_komplain($filter, ['status' => (int)$extra['status']]);
-                } else {
-                    $rows = $this->Crm_model->get_detail_komplain($filter, []);
-                }
-                break;
+            }
+
+            $data[] = [
+                'id_task'      => $row['id_task'],
+                'konsumen'     => $row['konsumen'],
+                'lokasi'       => $row['lokasi'],
+                'jenis'        => $row['jenis'] ?: $row['category'],
+                'status'       => $row['status_label'],
+                'status_id'    => $row['status_id'],
+                'divisi'       => $row['divisi'],
+                'waktu_status' => $waktu_status,
+                'created_at'   => $row['created_at'],
+            ];
         }
-
-        // Render tabel HTML
-        $html  = $this->_render_modal_table($rows);
-
-        $response = [
-            'title'     => $title . ' (' . number_format(count($rows)) . ')',
-            'html'      => $html,
-            'csrf_hash' => $this->security->get_csrf_hash(),
-        ];
 
         $this->output
             ->set_content_type('application/json')
-            ->set_output(json_encode($response));
+            ->set_output(json_encode([
+                'success' => true,
+                'data'    => $data,
+                'total'   => $total,
+                'page'    => $page,
+                'per_page'=> $per_page,
+            ]));
     }
 
-    // ─── EXPORT EXCEL (opsional, butuh PHPSpreadsheet / PhpExcel) ──
-    public function crm_export()
-    {
-        $type   = $this->input->get('type');
-        $divisi = $this->input->get('divisi');
-        // Implementasikan export sesuai library Excel yang dipakai
-        // Contoh menggunakan PhpSpreadsheet:
-        // $this->load->library('excel');
-        // ...
-        echo 'Export ' . htmlspecialchars($type) . ' — implementasikan sesuai kebutuhan';
-    }
+    // ============================================================
+    // Helper: baca filter dari GET request
+    // ============================================================
+    private function _get_filter() {
+        $date_from = $this->input->get('date_from') ?: '2025-01-01';
+        $date_to   = $this->input->get('date_to')   ?: date('Y-m-d');
+        $sumber    = $this->input->get('sumber')    ?: 'all';
+        $divisi    = $this->input->get('divisi')    ?: 'all';
 
-    // ─── HELPER: render tabel modal ─────────────────────────
-    private function _render_modal_table(array $rows): string
-    {
-        if (empty($rows)) {
-            return '<div class="alert alert-info">Tidak ada data ditemukan.</div>';
-        }
+        // Validasi format tanggal
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) $date_from = '2025-01-01';
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to))   $date_to   = date('Y-m-d');
 
-        $th = '<thead class="table-light">
-            <tr>
-                <th>ID Task</th>
-                <th>Konsumen</th>
-                <th>Lokasi/Blok</th>
-                <th>Jenis</th>
-                <th>Tgl Masuk</th>
-                <th>Status</th>
-            </tr>
-        </thead>';
-
-        $tbody = '';
-        foreach ($rows as $r) {
-            $status_label  = htmlspecialchars($r['status_label'] ?? '-');
-            $status_color  = htmlspecialchars($r['color'] ?? '#6b7280');
-            $tbody  .= '<tr>
-                <td style="font-family:monospace;font-size:11px;color:#9ca3af">' . htmlspecialchars($r['id_task'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['konsumen'] ?? '-') . '</td>
-                <td>' . htmlspecialchars($r['blok'] ?? $r['project'] ?? '-') . '</td>
-                <td title="' . htmlspecialchars($r['description'] ?? '') . '">' . htmlspecialchars(substr($r['description'] ?? '-', 0, 40)) . '</td>
-                <td style="font-family:monospace;font-size:11px">' . date('d M Y H:i', strtotime($r['created_at'] ?? 'now')) . '</td>
-                <td><span class="badge" style="background-color:' . $status_color . ';color:#fff">' . $status_label . '</span></td>
-            </tr>';
-        }
-
-        return '<div class="table-responsive">
-            <table class="table table-hover table-sm">' . $th . '<tbody>' . $tbody . '</tbody></table>
-        </div>';
+        return [
+            'date_from' => $date_from,
+            'date_to'   => $date_to,
+            'sumber'    => $sumber,
+            'divisi'    => $divisi,
+        ];
     }
 }
