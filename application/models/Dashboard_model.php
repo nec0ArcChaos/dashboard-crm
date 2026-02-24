@@ -452,13 +452,19 @@ class Dashboard_model extends CI_Model {
 
     // ============================================================
     // HELPER — Daftar divisi untuk filter dropdown
+    // Mengambil nilai unik kolom `divisi` dari cm_category
+    // CI3 tidak punya select_distinct(), gunakan raw query + GROUP BY
     // ============================================================
-    // public function get_list_divisi() {
-    //     $this->db->select_distinct('divisi');
-    //     $this->db->from('cm_category');
-    //     $this->db->where('divisi IS NOT NULL', null, false);
-    //     $this->db->where('is_show', 1);
-    //     $this->db->order_by('divisi', 'ASC');
-    //     return $this->db->get()->result_array();
-    // }
+    public function get_list_divisi() {
+        $query = $this->db->query("
+            SELECT divisi
+            FROM cm_category
+            WHERE divisi IS NOT NULL
+              AND divisi != ''
+              AND is_show = 1
+            GROUP BY divisi
+            ORDER BY divisi ASC
+        ");
+        return $query->result_array();
+    }
 }

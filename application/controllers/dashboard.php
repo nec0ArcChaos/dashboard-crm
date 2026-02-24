@@ -52,7 +52,7 @@ class Dashboard extends CI_Controller {
         $trend_data   = [];
         foreach ($trend_eskalasi_raw as $row) {
             $ts = strtotime($row['bulan'] . '-01');
-            $trend_labels[] = date('M', $ts) . "'" . date('y', $ts); // e.g. Jan'25
+            $trend_labels[] = date('M', $ts)."'".date('y', $ts); // e.g. Jan'25
             $trend_data[]   = (int)$row['total'];
         }
 
