@@ -453,7 +453,26 @@ class Dashboard_model extends CI_Model {
                 break;
             case 'divisi':
                 if (!empty($extra['divisi'])) {
-                    $this->db->where('c.divisi', $extra['divisi']);
+                    // Reverse mapping: konversi label kembali ke database value
+                    $divisi_reverse_map = [
+                        'Project'            => 'Project',
+                        'Buspro (Berkas)'    => 'Buspro',
+                        'Estate'             => 'Estate',
+                        'Finance'            => 'Finance',
+                        'Legal'              => 'Legal',
+                        'MEP'                => 'MEP',
+                        'Sales/Mkt'          => 'Sales',
+                        'Sosmed'             => 'CRM',
+                        'Aftersales'         => 'Aftersales',
+                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                    ];
+                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
+                        ? $divisi_reverse_map[$extra['divisi']] 
+                        : $extra['divisi'];
+                    
+                    $this->db->where('c.divisi', $db_divisi);
+                    // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
+                    $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
@@ -554,7 +573,26 @@ class Dashboard_model extends CI_Model {
                 break;
             case 'divisi':
                 if (!empty($extra['divisi'])) {
-                    $this->db->where('c.divisi', $extra['divisi']);
+                    // Reverse mapping: konversi label kembali ke database value
+                    $divisi_reverse_map = [
+                        'Project'            => 'Project',
+                        'Buspro (Berkas)'    => 'Buspro',
+                        'Estate'             => 'Estate',
+                        'Finance'            => 'Finance',
+                        'Legal'              => 'Legal',
+                        'MEP'                => 'MEP',
+                        'Sales/Mkt'          => 'Sales',
+                        'Sosmed'             => 'CRM',
+                        'Aftersales'         => 'Aftersales',
+                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                    ];
+                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
+                        ? $divisi_reverse_map[$extra['divisi']] 
+                        : $extra['divisi'];
+                    
+                    $this->db->where('c.divisi', $db_divisi);
+                    // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
+                    $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
