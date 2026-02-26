@@ -234,6 +234,9 @@ class Dashboard extends CI_Controller {
         // Get modal_eskalasi filter untuk eskalasi gabungan modal
         $modal_eskalasi = $this->input->get('modal_eskalasi');
 
+        // Get modal_ketepatan filter untuk ketepatan waktu modal
+        $modal_ketepatan = $this->input->get('modal_ketepatan');
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
@@ -242,6 +245,9 @@ class Dashboard extends CI_Controller {
         }
         if ($modal_eskalasi && $modal_eskalasi !== 'all') {
             $extra['modal_eskalasi'] = $modal_eskalasi;
+        }
+        if ($modal_ketepatan && $modal_ketepatan !== 'all') {
+            $extra['modal_ketepatan'] = $modal_ketepatan;
         }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);

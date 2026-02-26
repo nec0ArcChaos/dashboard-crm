@@ -512,6 +512,23 @@ class Dashboard_model extends CI_Model {
             }
         }
 
+        // Apply modal ketepatan filter (on time vs late)
+        if (!empty($extra['modal_ketepatan'])) {
+            if ($extra['modal_ketepatan'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
+            }
+        }
+
         // Apply global filter
         if (!empty($filter['date_from'])) {
             $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
@@ -645,6 +662,23 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
                 $this->db->where('t.escalation_at IS NULL', null, false);
+            }
+        }
+
+        // Apply modal ketepatan filter (on time vs late)
+        if (!empty($extra['modal_ketepatan'])) {
+            if ($extra['modal_ketepatan'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
             }
         }
 

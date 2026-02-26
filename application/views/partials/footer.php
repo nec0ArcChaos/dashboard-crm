@@ -178,8 +178,8 @@ new Chart('chartKetepatan', {
   data:{
     labels: ketepatanData.map(d=>d.divisi),
     datasets:[
-      { label:'On Time', data:ketepatanData.map(d=>d.ontime), backgroundColor:ketepatanData.map(d=>d.pct>=80?'#0E9F6E':'#E02424'), borderRadius:4 },
-      { label:'Late',    data:ketepatanData.map(d=>d.late),  backgroundColor:ketepatanData.map(d=>d.pct>=80?'rgba(14,159,110,.25)':'rgba(224,36,36,.25)'), borderRadius:4 },
+      { label:'On Time', data:ketepatanData.map(d=>d.ontime), backgroundColor:'#0E9F6E', borderRadius:4 },
+      { label:'Late',    data:ketepatanData.map(d=>d.late),  backgroundColor:'#E02424', borderRadius:4 },
     ]
   },
   options:{
@@ -189,7 +189,13 @@ new Chart('chartKetepatan', {
       x:{grid:{color:'#E4E8F0'},ticks:{font:{size:10}}},
       y:{grid:{display:false},ticks:{font:{size:10}}}
     },
-    onClick:(e,els)=>{ if(els.length) openModal('divisi', {divisi: ketepatanData[els[0].index].divisi}); }
+    onClick:(e,els)=>{
+      if(els.length) {
+        const datasetIndex = els[0].datasetIndex; // 0 = On Time, 1 = Late
+        const ketepatan_type = datasetIndex === 0 ? 'ontime' : 'late';
+        openModal('divisi', {divisi: ketepatanData[els[0].index].divisi, ketepatan_type: ketepatan_type});
+      }
+    }
   }
 });
 
@@ -255,11 +261,13 @@ const bsModal = new bootstrap.Modal(document.getElementById('detailModal'));
 let _currentModal = {};
 let _modalSumberFilter = 'all'; // Untuk filter sumber di dalam modal (all, konsumen, sosmed)
 let _modalEskalasiFilter = 'all'; // Untuk filter eskalasi di dalam modal (all, sudah, belum)
+let _modalKetepatanFilter = 'all'; // Untuk filter ketepatan di dalam modal (all, ontime, late)
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
   _modalSumberFilter = 'all'; // Reset filter sumber
   _modalEskalasiFilter = 'all'; // Reset filter eskalasi
+  _modalKetepatanFilter = extra.ketepatan_type || 'all'; // Set filter ketepatan dari parameter extra
   document.getElementById('modalTitle').textContent = 'Memuat data...';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
@@ -280,6 +288,7 @@ function loadModalPage(page) {
     divisi_filter: filterGlobal.divisi,
     modal_sumber: _modalSumberFilter, // Filter sumber di dalam modal
     modal_eskalasi: _modalEskalasiFilter, // Filter eskalasi di dalam modal
+    modal_ketepatan: _modalKetepatanFilter, // Filter ketepatan (all, ontime, late)
   });
 
   const fetchUrl = BASE_URL + 'dashboard/modal_detail?' + params.toString();
