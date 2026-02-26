@@ -132,25 +132,46 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Komplain sudah dieskalasi (escalation_at IS NOT NULL)
+     * KECUALI status 1, 2, 3 (Waiting, Waiting Head Div, Reject Lv.1) tetap dihitung belum eskalasi
+     * Filter berdasarkan tanggal eskalasi (escalation_at)
      */
     public function get_sudah_eskalasi($filter = []) {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
-        $this->_apply_filters(
-            @$filter['date_from'], @$filter['date_to'],
-            @$filter['sumber'], @$filter['divisi']
-        );
+        // Status 1,2,3 tidak dihitung sebagai sudah eskalasi
+        $this->db->where('t.status NOT IN (1,2,3)', null, false);
+        
+        // Filter tanggal berdasarkan escalation_at
+        if (!empty($filter['date_from'])) {
+            $this->db->where('DATE(t.escalation_at) >=', $filter['date_from']);
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('DATE(t.escalation_at) <=', $filter['date_to']);
+        }
+        
+        // Filter sumber dan divisi
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+        
         return $this->db->count_all_results();
     }
 
     /**
      * Komplain belum dieskalasi
+     * Include: escalation_at IS NULL OR status IN (1,2,3)
      */
     public function get_belum_eskalasi($filter = []) {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->where('t.escalation_at IS NULL', null, false);
+        // Belum eskalasi = escalation_at NULL OR status 1,2,3 (meskipun escalation_at ada)
+        $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
             @$filter['sumber'], @$filter['divisi']
@@ -160,16 +181,35 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Trend eskalasi per bulan (14 bulan terakhir)
+     * KECUALI status 1,2,3 tetap dihitung belum eskalasi
+     * Filter berdasarkan tanggal eskalasi (escalation_at)
      */
     public function get_trend_eskalasi($filter = []) {
         $this->db->select("DATE_FORMAT(t.escalation_at, '%Y-%m') as bulan, COUNT(*) as total");
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
-        $this->_apply_filters(
-            @$filter['date_from'], @$filter['date_to'],
-            @$filter['sumber'], @$filter['divisi']
-        );
+        // Status 1,2,3 tidak dihitung dalam trend
+        $this->db->where('t.status NOT IN (1,2,3)', null, false);
+        
+        // Filter tanggal berdasarkan escalation_at
+        if (!empty($filter['date_from'])) {
+            $this->db->where('DATE(t.escalation_at) >=', $filter['date_from']);
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('DATE(t.escalation_at) <=', $filter['date_to']);
+        }
+        
+        // Filter sumber dan divisi
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+        
         $this->db->group_by("DATE_FORMAT(t.escalation_at, '%Y-%m')");
         $this->db->order_by('bulan', 'ASC');
         $this->db->limit(14);
@@ -178,8 +218,8 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Data eskalasi per sumber (konsumen vs sosmed)
-     * Sudah eskalasi = escalation_at IS NOT NULL
-     * Belum eskalasi = escalation_at IS NULL
+     * Sudah eskalasi = escalation_at IS NOT NULL & status NOT IN (1,2,3) dengan filter tanggal eskalasi
+     * Belum eskalasi = escalation_at IS NULL OR status IN (1,2,3) dengan filter tanggal
      * Return array: [ 'konsumen' => ['sudah'=>n, 'belum'=>n], 'sosmed' => [...] ]
      */
     public function get_eskalasi_per_sumber($filter = []) {
@@ -188,35 +228,53 @@ class Dashboard_model extends CI_Model {
             'sosmed'   => ['sudah' => 0, 'belum' => 0],
         ];
 
-        // Konsumen sudah eskalasi
+        // Konsumen sudah eskalasi (filter berdasarkan tanggal eskalasi, KECUALI status 1,2,3)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
-        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $this->db->where('t.status NOT IN (1,2,3)', null, false);
+        if (!empty($filter['date_from'])) {
+            $this->db->where('DATE(t.escalation_at) >=', $filter['date_from']);
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('DATE(t.escalation_at) <=', $filter['date_to']);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
         $result['konsumen']['sudah'] = $this->db->count_all_results();
 
-        // Konsumen belum eskalasi
+        // Konsumen belum eskalasi (escalation_at IS NULL OR status IN (1,2,3))
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
-        $this->db->where('t.escalation_at IS NULL', null, false);
+        $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['belum'] = $this->db->count_all_results();
 
-        // Sosmed sudah eskalasi
+        // Sosmed sudah eskalasi (filter berdasarkan tanggal eskalasi, KECUALI status 1,2,3)
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
-        $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
+        $this->db->where('t.status NOT IN (1,2,3)', null, false);
+        if (!empty($filter['date_from'])) {
+            $this->db->where('DATE(t.escalation_at) >=', $filter['date_from']);
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('DATE(t.escalation_at) <=', $filter['date_to']);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
         $result['sosmed']['sudah'] = $this->db->count_all_results();
 
-        // Sosmed belum eskalasi
+        // Sosmed belum eskalasi (escalation_at IS NULL OR status IN (1,2,3))
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-        $this->db->where('t.escalation_at IS NULL', null, false);
+        $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['sosmed']['belum'] = $this->db->count_all_results();
 
