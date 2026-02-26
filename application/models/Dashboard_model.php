@@ -387,6 +387,35 @@ class Dashboard_model extends CI_Model {
      * @param int    $offset
      */
     public function get_detail_modal($type, $extra = [], $filter = [], $limit = 10, $offset = 0) {
+        // Pre-load category IDs jika type adalah 'divisi'
+        $divisi_category_ids = [];
+        if ($type === 'divisi' && !empty($extra['divisi'])) {
+            // Reverse mapping: konversi label kembali ke database value
+            $divisi_reverse_map = [
+                'Project'            => 'Project',
+                'Buspro (Berkas)'    => 'Buspro',
+                'Estate'             => 'Estate',
+                'Finance'            => 'Finance',
+                'Legal'              => 'Legal',
+                'MEP'                => 'MEP',
+                'Sales/Mkt'          => 'Sales',
+                'Sosmed'             => 'CRM',
+                'Aftersales'         => 'Aftersales',
+                'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+            ];
+            $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
+                ? $divisi_reverse_map[$extra['divisi']] 
+                : $extra['divisi'];
+            
+            // Query kategori dari divisi ini
+            $cat_result = $this->db->query(
+                "SELECT id FROM cm_category WHERE divisi = ?",
+                [$db_divisi]
+            )->result_array();
+            
+            $divisi_category_ids = array_column($cat_result, 'id');
+        }
+
         $this->db->select('t.id_task, t.konsumen, t.project as lokasi, t.task as jenis,
             t.status as status_id, s.status as status_label, s.color as status_color,
             t.due_date, t.done_date, t.created_at,
@@ -452,28 +481,15 @@ class Dashboard_model extends CI_Model {
                 }
                 break;
             case 'divisi':
-                if (!empty($extra['divisi'])) {
-                    // Reverse mapping: konversi label kembali ke database value
-                    $divisi_reverse_map = [
-                        'Project'            => 'Project',
-                        'Buspro (Berkas)'    => 'Buspro',
-                        'Estate'             => 'Estate',
-                        'Finance'            => 'Finance',
-                        'Legal'              => 'Legal',
-                        'MEP'                => 'MEP',
-                        'Sales/Mkt'          => 'Sales',
-                        'Sosmed'             => 'CRM',
-                        'Aftersales'         => 'Aftersales',
-                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
-                    ];
-                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
-                        ? $divisi_reverse_map[$extra['divisi']] 
-                        : $extra['divisi'];
-                    
-                    $this->db->where('c.divisi', $db_divisi);
+                if (!empty($divisi_category_ids)) {
+                    // Gunakan kategori dari divisi untuk filter id_category
+                    $this->db->where_in('t.id_category', $divisi_category_ids);
                     // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
                     $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                } else {
+                    // Tidak ada kategori untuk divisi ini, return no results
+                    $this->db->where('1', '0');
                 }
                 break;
         }
@@ -514,6 +530,35 @@ class Dashboard_model extends CI_Model {
      * Count total baris untuk modal (untuk paginasi)
      */
     public function count_detail_modal($type, $extra = [], $filter = []) {
+        // Pre-load category IDs jika type adalah 'divisi'
+        $divisi_category_ids = [];
+        if ($type === 'divisi' && !empty($extra['divisi'])) {
+            // Reverse mapping: konversi label kembali ke database value
+            $divisi_reverse_map = [
+                'Project'            => 'Project',
+                'Buspro (Berkas)'    => 'Buspro',
+                'Estate'             => 'Estate',
+                'Finance'            => 'Finance',
+                'Legal'              => 'Legal',
+                'MEP'                => 'MEP',
+                'Sales/Mkt'          => 'Sales',
+                'Sosmed'             => 'CRM',
+                'Aftersales'         => 'Aftersales',
+                'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+            ];
+            $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
+                ? $divisi_reverse_map[$extra['divisi']] 
+                : $extra['divisi'];
+            
+            // Query kategori dari divisi ini
+            $cat_result = $this->db->query(
+                "SELECT id FROM cm_category WHERE divisi = ?",
+                [$db_divisi]
+            )->result_array();
+            
+            $divisi_category_ids = array_column($cat_result, 'id');
+        }
+
         // Reuse query sama seperti get_detail_modal tapi pakai count
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
@@ -572,28 +617,15 @@ class Dashboard_model extends CI_Model {
                 }
                 break;
             case 'divisi':
-                if (!empty($extra['divisi'])) {
-                    // Reverse mapping: konversi label kembali ke database value
-                    $divisi_reverse_map = [
-                        'Project'            => 'Project',
-                        'Buspro (Berkas)'    => 'Buspro',
-                        'Estate'             => 'Estate',
-                        'Finance'            => 'Finance',
-                        'Legal'              => 'Legal',
-                        'MEP'                => 'MEP',
-                        'Sales/Mkt'          => 'Sales',
-                        'Sosmed'             => 'CRM',
-                        'Aftersales'         => 'Aftersales',
-                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
-                    ];
-                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
-                        ? $divisi_reverse_map[$extra['divisi']] 
-                        : $extra['divisi'];
-                    
-                    $this->db->where('c.divisi', $db_divisi);
+                if (!empty($divisi_category_ids)) {
+                    // Gunakan kategori dari divisi untuk filter id_category
+                    $this->db->where_in('t.id_category', $divisi_category_ids);
                     // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
                     $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                } else {
+                    // Tidak ada kategori untuk divisi ini, return no results
+                    $this->db->where('1', '0');
                 }
                 break;
         }
