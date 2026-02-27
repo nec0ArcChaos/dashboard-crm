@@ -100,11 +100,13 @@ Chart.defaults.font.family = "system-ui, sans-serif";
 Chart.defaults.plugins.legend.display = false;
 
 // ============================================================
-// CLOCK
+// CLOCK (if header element exists)
 // ============================================================
 function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const clockEl = document.getElementById('clock');
+  if (clockEl) {
+    clockEl.textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
 }
 setInterval(updateClock,1000); updateClock();
 
@@ -500,7 +502,7 @@ function loadModalPage(page) {
     modal_ketepatan_status: _modalKetepatanTotalStatus, // Filter status untuk ketepatan_total
   });
 
-  const fetchUrl = '/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString();
+  const fetchUrl = BASE_URL + 'dash_crm/controllers_dash_crm/modal_detail?' + params.toString();
   console.log('Loading modal from:', fetchUrl);
 
   fetch(fetchUrl)
@@ -634,7 +636,7 @@ function exportDrilldownData() {
     divisi:    filterGlobal.divisi, // Gunakan 'divisi' bukan 'divisi_filter'
     modal_sumber: _drilldownSumberFilter, // Jika ada filter sumber di drilldown
   });
-  const exportUrl = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
+  const exportUrl = BASE_URL + 'dash_crm/controllers_dash_crm/export_modal_data?' + params.toString();
   console.log('Opening drilldown export URL:', exportUrl);
   window.location.href = exportUrl;
 }
@@ -682,7 +684,7 @@ if (document.getElementById('btnExport')) {
       modal_verif_sumber: _modalVerifTotalSumber,
       modal_verif_status: _modalVerifTotalStatus,
     });
-    window.location.href = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
+    window.location.href = BASE_URL + 'dash_crm/controllers_dash_crm/export_modal_data?' + params.toString();
   });
 }
 
@@ -721,7 +723,7 @@ function loadDrilldownPage(page) {
     drilldown_sumber: _drilldownSumberFilter,
   });
 
-  const fetchUrl = '/dashboard-crm/index.php/dashboard/drilldown_verifikasi?' + params.toString();
+  const fetchUrl = BASE_URL + 'dash_crm/controllers_dash_crm/drilldown_verifikasi?' + params.toString();
   console.log('Fetching drilldown from:', fetchUrl);
 
   fetch(fetchUrl)
@@ -853,7 +855,7 @@ function loadKetepatanGlobalPage(page) {
     divisi:    filterGlobal.divisi,
   });
 
-  const fetchUrl = '/dashboard-crm/index.php/dashboard/ketepatan_global?' + params.toString();
+  const fetchUrl = BASE_URL + 'dash_crm/controllers_dash_crm/ketepatan_global?' + params.toString();
   console.log('Loading ketepatan global from:', fetchUrl);
 
   fetch(fetchUrl)
@@ -956,7 +958,7 @@ if (document.getElementById('btnKetepatanExport')) {
       sumber:    filterGlobal.sumber,
       divisi:    filterGlobal.divisi,
     });
-    window.location.href = BASE_URL + 'dashboard/export_ketepatan_data?' + params.toString();
+    window.location.href = BASE_URL + 'dash_crm/controllers_dash_crm/export_ketepatan_data?' + params.toString();
   });
 }
 
@@ -968,11 +970,11 @@ function applyFilter() {
   const t = document.getElementById('dateTo').value;
   const s = document.getElementById('filterSumber').value;
   const d = document.getElementById('filterDivisi').value;
-  window.location.href = '/dashboard-crm/index.php/dashboard?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
+  window.location.href = BASE_URL + 'dash_crm/controllers_dash_crm?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
 }
 
 function resetFilter() {
-  window.location.href = '/dashboard-crm/index.php/dashboard?date_from=2025-01-01&date_to=' + new Date().toISOString().split('T')[0] + '&sumber=all&divisi=all';
+  window.location.href = BASE_URL + 'dash_crm/controllers_dash_crm?date_from=2025-01-01&date_to=' + new Date().toISOString().split('T')[0] + '&sumber=all&divisi=all';
 }
 </script>
 </body>
