@@ -405,6 +405,20 @@ function setSumberEskalasiFilter(eskalasi) {
   loadModalPage(1); // Reload halaman 1 dengan filter baru
 }
 
+function exportDrilldownData() {
+  const params = new URLSearchParams({
+    type:      'verif_terverifikasi', // Hardcoded untuk drilldown verifikasi
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi_filter: filterGlobal.divisi,
+    modal_sumber: _drilldownSumberFilter, // Gunakan filter sumber dari drilldown
+  });
+  const exportUrl = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
+  console.log('Opening drilldown export URL:', exportUrl);
+  window.location.href = exportUrl;
+}
+
 function getBadgeClass(status_id) {
   const map = {1:'waiting',2:'waiting',3:'reject',4:'working',5:'reject',6:'done',7:'reject',8:'waiting',9:'waiting'};
   return map[status_id] || 'working';
@@ -431,17 +445,22 @@ function renderPagination(total, per_page, current_page) {
   document.getElementById('modalPagination').innerHTML = html;
 }
 
-// Export Excel — buka URL download
+// Export CSV — buka URL download
 document.getElementById('btnExport').addEventListener('click', () => {
   const params = new URLSearchParams({
     type:      _currentModal.type,
     status_id: _currentModal.extra?.status_id || '',
     divisi:    _currentModal.extra?.divisi    || '',
-    export:    'excel',
     date_from: filterGlobal.date_from,
     date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi_filter: filterGlobal.divisi,
+    modal_sumber: _modalSumberFilter,
+    modal_eskalasi: _modalEskalasiFilter,
   });
-  window.open(BASE_URL + 'dashboard/modal_detail?' + params.toString(), '_blank');
+  const exportUrl = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
+  console.log('Opening export URL:', exportUrl);
+  window.location.href = exportUrl;
 });
 
 // Drilldown button
@@ -454,11 +473,18 @@ document.getElementById('btnDrilldown').addEventListener('click', () => {
 // DRILLDOWN VERIFIKASI — Tabel detail di dalam modal
 // ============================================================
 let _drilldownActive = false;
+let _drilldownSumberFilter = 'all'; // Filter sumber untuk drilldown verifikasi
 
 function openDrilldownVerifikasi() {
   _drilldownActive = true;
+  _drilldownSumberFilter = 'all'; // Reset filter sumber
   document.getElementById('modalContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data detail...</p></div>';
   loadDrilldownPage(1);
+}
+
+function setDrilldownSumberFilter(sumber) {
+  _drilldownSumberFilter = sumber;
+  loadDrilldownPage(1); // Reload halaman 1 dengan filter baru
 }
 
 function loadDrilldownPage(page) {
@@ -469,6 +495,7 @@ function loadDrilldownPage(page) {
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
     divisi:    filterGlobal.divisi,
+    drilldown_sumber: _drilldownSumberFilter,
   });
 
   const fetchUrl = BASE_URL + 'dashboard/drilldown_verifikasi?' + params.toString();
@@ -507,8 +534,17 @@ function loadDrilldownPage(page) {
         9: 'waiting',   // Rescheduled 2
       };
 
-      // Render tabel dengan kolom: No. Komplain, Konsumen, Lokasi, Jenis, Status
-      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.<br/><small style="color:#999">Hanya menampilkan data dengan status: Reject, Working On, Done, atau Unsolved</small></p>
+      // Render filter buttons dan tabel
+      let html = `
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <small class="text-muted align-self-center">Filter Sumber:</small>
+          <button class="btn btn-sm ${_drilldownSumberFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('all')">Semua</button>
+          <button class="btn btn-sm ${_drilldownSumberFilter === 'konsumen' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('konsumen')">Konsumen</button>
+          <button class="btn btn-sm ${_drilldownSumberFilter === 'sosmed' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('sosmed')">Sosial Media</button>
+          <button class="btn btn-sm btn-outline-info ms-auto" onclick="exportDrilldownData()"><i class="bi bi-download"></i> Export CSV</button>
+        </div>`;
+
+      html += `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.<br/><small style="color:#999">Hanya menampilkan data dengan status: Reject, Working On, Done, atau Unsolved</small></p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>

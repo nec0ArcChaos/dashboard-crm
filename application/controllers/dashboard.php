@@ -335,6 +335,115 @@ class Dashboard extends CI_Controller {
     }
 
     // ============================================================
+    // EXPORT — Export modal detail ke CSV
+    // ============================================================
+    public function export_modal_data() {
+        try {
+            $type      = $this->input->get('type');
+            $status_id = $this->input->get('status_id');
+            $divisi    = $this->input->get('divisi');
+            $filter    = $this->_get_filter();
+
+            // Get modal_sumber filter untuk verifikasi modal
+            $modal_sumber = $this->input->get('modal_sumber');
+
+            // Get modal_eskalasi filter untuk eskalasi gabungan modal
+            $modal_eskalasi = $this->input->get('modal_eskalasi');
+
+            $extra = [];
+            if ($status_id) $extra['status_id'] = $status_id;
+            if ($divisi)    $extra['divisi']     = $divisi;
+            if ($modal_sumber && $modal_sumber !== 'all') {
+                $extra['modal_sumber'] = $modal_sumber;
+            }
+            if ($modal_eskalasi && $modal_eskalasi !== 'all') {
+                $extra['modal_eskalasi'] = $modal_eskalasi;
+            }
+
+            // Ambil data untuk export (tanpa pagination)
+            $rows = $this->dashboard_m->get_detail_modal_export($type, $extra, $filter);
+
+            if (empty($rows)) {
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'error'   => 'Tidak ada data untuk diexport',
+                    ]));
+                return;
+            }
+
+            // Helper function untuk konversi null ke string
+            $sanitize = function($value, $default = '') {
+                if ($value === null || $value === false) {
+                    return $default;
+                }
+                // Hapus HTML tags dan trim
+                return trim(strip_tags((string)$value));
+            };
+
+            // Prepare CSV headers
+            $headers = [
+                'ID Complaint',
+                'Konsumen',
+                'Lokasi',
+                'Blok',
+                'Jenis',
+                'Divisi',
+                'Status',
+                'Tanggal Dibuat',
+                'Tanggal Diverifikasi',
+                'Diverifikasi Oleh',
+                'Catatan Verifikasi',
+            ];
+
+            // Build CSV content
+            $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
+
+            foreach ($rows as $row) {
+                $line = [
+                    $sanitize($row['id_task'], '-'),
+                    $sanitize($row['konsumen'], '-'),
+                    $sanitize($row['lokasi'], '-'),
+                    $sanitize($row['blok'], '-'),
+                    $sanitize($row['jenis'] ?: $row['category'], '-'),
+                    $sanitize($row['divisi'], '-'),
+                    $sanitize($row['status_label'], 'Unknown'),
+                    $sanitize($row['created_at'], '-'),
+                    $sanitize($row['verified_at'], '-'),
+                    $sanitize($row['verified_name'], '-'),
+                    $sanitize($row['verified_note'], '-'),
+                ];
+                $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
+            }
+
+            // Generate filename dengan timestamp
+            $timestamp = date('Y-m-d_H-i-s');
+            $type_label = str_replace(['verif_', 'esk_'], '', $type);
+            $filename = "export_komplain_{$type_label}_{$timestamp}.csv";
+
+            // Output CSV file
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+
+            echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
+            echo $csv_content;
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Export error: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ]));
+        }
+    }
+
+    // ============================================================
     // Helper: baca filter dari GET request
     // ============================================================
     private function _get_filter() {

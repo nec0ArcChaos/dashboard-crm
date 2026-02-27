@@ -760,4 +760,114 @@ class Dashboard_model extends CI_Model {
 
         return $this->db->count_all_results();
     }
+
+    // ============================================================
+    // EXPORT — Get data lengkap untuk export (tanpa pagination)
+    // ============================================================
+    /**
+     * Ambil data lengkap untuk export CSV/Excel
+     * Reuse logic yang sama dengan get_detail_modal tapi tanpa limit/offset
+     */
+    public function get_detail_modal_export($type, $extra = [], $filter = []) {
+        $this->db->select('t.id_task, t.konsumen, t.project as lokasi, t.blok, t.task as jenis,
+            t.status as status_id, s.status as status_label, s.color as status_color,
+            t.due_date, t.done_date, t.created_at, t.updated_at,
+            t.verified_at, t.verified_by, t.verified_name, t.verified_note,
+            t.escalation_at, t.escalation_by, t.escalation_name,
+            t.status_konsumen,
+            c.divisi, c.category, c.id as id_category');
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('cm_status s', 's.id = t.status', 'left');
+
+        switch ($type) {
+            case 'verif_terverifikasi':
+                $this->db->where('t.status !=', 1);
+                break;
+            case 'verif_belum':
+                $this->db->where('t.status', 1);
+                break;
+            case 'verif_konsumen':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.status !=', 1);
+                break;
+            case 'verif_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.status', 1);
+                break;
+            case 'verif_sosmed_v':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.status !=', 1);
+                break;
+            case 'verif_sosmed_b':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.status', 1);
+                break;
+            case 'esk_sudah':
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_belum':
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
+            case 'esk_gabungan':
+                break;
+            case 'esk_konsumen_sudah':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_konsumen_belum':
+                $this->db->where('t.status_konsumen', 1);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
+            case 'esk_sosmed_sudah':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                break;
+            case 'esk_sosmed_belum':
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+                $this->db->where('t.escalation_at IS NULL', null, false);
+                break;
+            case 'status':
+                if (!empty($extra['status_id'])) {
+                    $this->db->where('t.status', $extra['status_id']);
+                }
+                break;
+            case 'divisi':
+                if (!empty($extra['divisi'])) {
+                    $this->db->where('c.divisi', $extra['divisi']);
+                    $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                }
+                break;
+        }
+
+        // Apply modal sumber filter untuk verifikasi modal
+        if (!empty($extra['modal_sumber'])) {
+            if ($extra['modal_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal eskalasi filter untuk eskalasi gabungan modal
+        if (!empty($extra['modal_eskalasi'])) {
+            if ($extra['modal_eskalasi'] === 'sudah') {
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+            } elseif ($extra['modal_eskalasi'] === 'belum') {
+                $this->db->where('t.escalation_at IS NULL', null, false);
+            }
+        }
+
+        // Apply global filter
+        if (!empty($filter['date_from'])) {
+            $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+
+        $this->db->order_by('t.created_at', 'DESC');
+
+        return $this->db->get()->result_array();
+    }
 }
