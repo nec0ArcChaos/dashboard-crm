@@ -33,6 +33,30 @@
       </div>
       <div class="modal-body" id="modalBody">
         <div id="modalLoading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data...</p></div>
+        <div id="verifTotalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
+            
+            <!-- Filter Sumber -->
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
+              <div class="d-flex gap-2">
+                <label style="margin:0"><input type="checkbox" id="verifTotalSemua" checked onchange="toggleVerifTotalAll(this)"> <span style="font-size:12px">Semua</span></label>
+                <label style="margin:0"><input type="checkbox" id="verifTotalKonsumen" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Konsumen</span></label>
+                <label style="margin:0"><input type="checkbox" id="verifTotalSosmed" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Sosmed</span></label>
+              </div>
+            </div>
+
+            <!-- Filter Verifikasi -->
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Verifikasi:</label>
+              <div class="d-flex gap-2">
+                <label style="margin:0"><input type="checkbox" id="verifTotalTerverif" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Sudah</span></label>
+                <label style="margin:0"><input type="checkbox" id="verifTotalBelumVerif" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Belum</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="modalContent"></div>
         <div id="modalPagination" class="mt-3"></div>
       </div>
@@ -285,17 +309,85 @@ let _currentModal = {};
 let _modalSumberFilter = 'all'; // Untuk filter sumber di dalam modal (all, konsumen, sosmed)
 let _modalEskalasiFilter = 'all'; // Untuk filter eskalasi di dalam modal (all, sudah, belum)
 let _modalKetepatanFilter = 'all'; // Untuk filter ketepatan di dalam modal (all, ontime, late)
+let _modalVerifTotalSumber = 'all'; // Filter sumber untuk verif_total (all, konsumen, sosmed)
+let _modalVerifTotalStatus = 'all'; // Filter status untuk verif_total (all, verified, unverified)
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
   _modalSumberFilter = 'all'; // Reset filter sumber
   _modalEskalasiFilter = 'all'; // Reset filter eskalasi
   _modalKetepatanFilter = extra.ketepatan_type || 'all'; // Set filter ketepatan dari parameter extra
+  _modalVerifTotalSumber = 'all'; // Reset filter sumber verif_total
+  _modalVerifTotalStatus = 'all'; // Reset filter status verif_total
+
+  // Tampilkan/sembunyikan filter berdasarkan tipe modal
+  const verifTotalFilters = document.getElementById('verifTotalFilters');
+  if (type === 'verif_total') {
+    verifTotalFilters.style.display = 'block';
+    // Reset checkbox
+    document.getElementById('verifTotalSemua').checked = true;
+    document.getElementById('verifTotalKonsumen').checked = false;
+    document.getElementById('verifTotalSosmed').checked = false;
+    document.getElementById('verifTotalTerverif').checked = false;
+    document.getElementById('verifTotalBelumVerif').checked = false;
+  } else {
+    verifTotalFilters.style.display = 'none';
+  }
+
   document.getElementById('modalTitle').textContent = 'Memuat data...';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
   document.getElementById('modalLoading').style.display = 'block';
   bsModal.show();
+  loadModalPage(1);
+}
+
+function toggleVerifTotalAll(checkbox) {
+  if (checkbox.checked) {
+    // Jika "Semua" di-check, uncheck yang lain
+    document.getElementById('verifTotalKonsumen').checked = false;
+    document.getElementById('verifTotalSosmed').checked = false;
+    document.getElementById('verifTotalTerverif').checked = false;
+    document.getElementById('verifTotalBelumVerif').checked = false;
+    _modalVerifTotalSumber = 'all';
+    _modalVerifTotalStatus = 'all';
+  }
+  loadModalPage(1);
+}
+
+function updateVerifTotalFilters() {
+  // Uncheck "Semua" jika ada filter lain yang di-check
+  const konsumen = document.getElementById('verifTotalKonsumen').checked;
+  const sosmed = document.getElementById('verifTotalSosmed').checked;
+  const terverif = document.getElementById('verifTotalTerverif').checked;
+  const belumVerif = document.getElementById('verifTotalBelumVerif').checked;
+
+  if (konsumen || sosmed || terverif || belumVerif) {
+    document.getElementById('verifTotalSemua').checked = false;
+  }
+
+  // Set sumber filter
+  if (konsumen && !sosmed) {
+    _modalVerifTotalSumber = 'konsumen';
+  } else if (sosmed && !konsumen) {
+    _modalVerifTotalSumber = 'sosmed';
+  } else if (konsumen && sosmed) {
+    _modalVerifTotalSumber = 'all';
+  } else {
+    _modalVerifTotalSumber = 'all';
+  }
+
+  // Set status verifikasi filter
+  if (terverif && !belumVerif) {
+    _modalVerifTotalStatus = 'verified';
+  } else if (belumVerif && !terverif) {
+    _modalVerifTotalStatus = 'unverified';
+  } else if (terverif && belumVerif) {
+    _modalVerifTotalStatus = 'all';
+  } else {
+    _modalVerifTotalStatus = 'all';
+  }
+
   loadModalPage(1);
 }
 
@@ -312,6 +404,8 @@ function loadModalPage(page) {
     modal_sumber: _modalSumberFilter, // Filter sumber di dalam modal
     modal_eskalasi: _modalEskalasiFilter, // Filter eskalasi di dalam modal
     modal_ketepatan: _modalKetepatanFilter, // Filter ketepatan (all, ontime, late)
+    modal_verif_sumber: _modalVerifTotalSumber, // Filter sumber untuk verif_total
+    modal_verif_status: _modalVerifTotalStatus, // Filter status untuk verif_total
   });
 
   const fetchUrl = '/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString();
@@ -335,6 +429,7 @@ function loadModalPage(page) {
 
       // Set judul modal
       const titleMap = {
+        verif_total:         `Total Komplain — Drill-Down (${res.total.toLocaleString('id')})`,
         verif_terverifikasi: `Komplain Terverifikasi (${res.total.toLocaleString('id')})`,
         verif_belum:         `Belum Terverifikasi (${res.total.toLocaleString('id')})`,
         verif_konsumen:      `Konsumen Terverifikasi (${res.total.toLocaleString('id')})`,

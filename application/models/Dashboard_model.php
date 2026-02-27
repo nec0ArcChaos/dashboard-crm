@@ -522,6 +522,10 @@ class Dashboard_model extends CI_Model {
         $this->db->join('cm_status s', 's.id = t.status', 'left');
 
         switch ($type) {
+            case 'verif_total':
+                // Tampilkan semua komplain tanpa filter status tertentu
+                // Filter sumber dan status verifikasi akan diaplikasikan di bawah
+                break;
             case 'verif_terverifikasi':
                 $this->db->where('t.status !=', 1);
                 break;
@@ -598,29 +602,30 @@ class Dashboard_model extends CI_Model {
             }
         }
 
+        // Apply modal verif sumber filter untuk verif_total modal
+        if (!empty($extra['modal_verif_sumber'])) {
+            if ($extra['modal_verif_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_verif_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal verif status filter (verified/unverified)
+        if (!empty($extra['modal_verif_status'])) {
+            if ($extra['modal_verif_status'] === 'verified') {
+                $this->db->where('t.status !=', 1); // Terverifikasi = status != 1 (Waiting)
+            } elseif ($extra['modal_verif_status'] === 'unverified') {
+                $this->db->where('t.status', 1); // Belum terverifikasi = status = 1 (Waiting)
+            }
+        }
+
         // Apply modal eskalasi filter untuk eskalasi gabungan modal
         if (!empty($extra['modal_eskalasi'])) {
             if ($extra['modal_eskalasi'] === 'sudah') {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
                 $this->db->where('t.escalation_at IS NULL', null, false);
-            }
-        }
-
-        // Apply modal ketepatan filter (on time vs late)
-        if (!empty($extra['modal_ketepatan'])) {
-            if ($extra['modal_ketepatan'] === 'ontime') {
-                // On Time: done_date <= due_date
-                $this->db->where('t.done_date IS NOT NULL', null, false);
-                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
-                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
-            } elseif ($extra['modal_ketepatan'] === 'late') {
-                // Late: done_date > due_date
-                $this->db->where('t.done_date IS NOT NULL', null, false);
-                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
-                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
             }
         }
 
@@ -676,6 +681,10 @@ class Dashboard_model extends CI_Model {
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
 
         switch ($type) {
+            case 'verif_total':
+                // Tampilkan semua komplain tanpa filter status tertentu
+                // Filter sumber dan status verifikasi akan diaplikasikan di bawah
+                break;
             case 'verif_terverifikasi':
                 $this->db->where('t.status !=', 1);
                 break;
@@ -747,6 +756,24 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.status_konsumen', 1);
             } elseif ($extra['modal_sumber'] === 'sosmed') {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal verif sumber filter untuk verif_total modal
+        if (!empty($extra['modal_verif_sumber'])) {
+            if ($extra['modal_verif_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_verif_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal verif status filter (verified/unverified)
+        if (!empty($extra['modal_verif_status'])) {
+            if ($extra['modal_verif_status'] === 'verified') {
+                $this->db->where('t.status !=', 1); // Terverifikasi = status != 1 (Waiting)
+            } elseif ($extra['modal_verif_status'] === 'unverified') {
+                $this->db->where('t.status', 1); // Belum terverifikasi = status = 1 (Waiting)
             }
         }
 
@@ -1035,6 +1062,10 @@ class Dashboard_model extends CI_Model {
         $this->db->join('cm_status s', 's.id = t.status', 'left');
 
         switch ($type) {
+            case 'verif_total':
+                // Tampilkan semua komplain tanpa filter status tertentu
+                // Filter sumber dan status verifikasi akan diaplikasikan di bawah
+                break;
             case 'verif_terverifikasi':
                 $this->db->where('t.status !=', 1);
                 break;
@@ -1134,6 +1165,24 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.status_konsumen', 1);
             } elseif ($extra['modal_sumber'] === 'sosmed') {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal verif sumber filter untuk verif_total modal
+        if (!empty($extra['modal_verif_sumber'])) {
+            if ($extra['modal_verif_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_verif_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal verif status filter (verified/unverified)
+        if (!empty($extra['modal_verif_status'])) {
+            if ($extra['modal_verif_status'] === 'verified') {
+                $this->db->where('t.status !=', 1); // Terverifikasi = status != 1 (Waiting)
+            } elseif ($extra['modal_verif_status'] === 'unverified') {
+                $this->db->where('t.status', 1); // Belum terverifikasi = status = 1 (Waiting)
             }
         }
 

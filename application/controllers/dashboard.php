@@ -241,6 +241,10 @@ class Dashboard extends CI_Controller {
         // Get modal_ketepatan filter untuk ketepatan waktu modal
         $modal_ketepatan = $this->input->get('modal_ketepatan');
 
+        // Get modal_verif_sumber dan modal_verif_status untuk verif_total
+        $modal_verif_sumber = $this->input->get('modal_verif_sumber');
+        $modal_verif_status = $this->input->get('modal_verif_status');
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
@@ -252,6 +256,12 @@ class Dashboard extends CI_Controller {
         }
         if ($modal_ketepatan && $modal_ketepatan !== 'all') {
             $extra['modal_ketepatan'] = $modal_ketepatan;
+        }
+        if ($modal_verif_sumber && $modal_verif_sumber !== 'all') {
+            $extra['modal_verif_sumber'] = $modal_verif_sumber;
+        }
+        if ($modal_verif_status && $modal_verif_status !== 'all') {
+            $extra['modal_verif_status'] = $modal_verif_status;
         }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);

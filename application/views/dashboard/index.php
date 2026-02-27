@@ -51,10 +51,10 @@
 
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-3">
-        <div class="kpi-card green">
+        <div class="kpi-card green" style="cursor:pointer" onclick="openModal('verif_total')">
           <div class="kpi-label">Total Komplain</div>
           <div class="kpi-value"><?= number_format($total_komplain, 0, ',', '.') ?></div>
-          <div class="kpi-meta">Semua sumber</div>
+          <div class="kpi-meta">Klik untuk drill-down →</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
