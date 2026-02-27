@@ -391,24 +391,15 @@ class Dashboard_model extends CI_Model {
 
     /**
      * Distribusi status komplain berdasarkan cm_status
+     * Menampilkan data dari SEMUA task (tidak hanya yang sudah dieskalasi)
      */
     public function get_status_komplain($filter = []) {
-        $this->db->select('s.id, s.status, s.color, COUNT(t.id_task) as total');
-        $this->db->from('cm_status s');
-        $this->db->join('cm_task t', 't.status = s.id AND t.escalation_at IS NOT NULL', 'left');
-        if (!empty($filter['date_from'])) {
-            $this->db->where('(t.created_at IS NULL OR t.created_at >=', $filter['date_from'] . ' 00:00:00');
-            $this->db->where('t.created_at IS NULL OR t.created_at >=', null, false); // handled in raw query instead
-        }
-        $this->db->group_by('s.id, s.status, s.color');
-        $this->db->order_by('s.id', 'ASC');
-
         // Gunakan raw query agar lebih akurat dengan kondisi kompleks
         $params = [];
         $sql = "
             SELECT s.id, s.status, s.color, COUNT(t.id_task) as total
             FROM cm_status s
-            LEFT JOIN cm_task t ON t.status = s.id AND t.escalation_at IS NOT NULL
+            LEFT JOIN cm_task t ON t.status = s.id
         ";
 
         $wheres = [];
@@ -420,6 +411,16 @@ class Dashboard_model extends CI_Model {
             $wheres[] = "(t.created_at IS NULL OR t.created_at <= ?)";
             $params[]  = $filter['date_to'] . ' 23:59:59';
         }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $wheres[] = "(t.status_konsumen IS NULL OR t.status_konsumen = 1)";
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $wheres[] = "(t.status_konsumen IS NULL OR t.status_konsumen = 0)";
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $wheres[] = "c.divisi = ?";
+            $params[] = $filter['divisi'];
+        }
+        
         if ($wheres) {
             $sql .= " WHERE " . implode(' AND ', $wheres);
         }
@@ -506,7 +507,6 @@ class Dashboard_model extends CI_Model {
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
-                    $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
             case 'divisi':
@@ -607,7 +607,6 @@ class Dashboard_model extends CI_Model {
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
-                    $this->db->where('t.escalation_at IS NOT NULL', null, false);
                 }
                 break;
             case 'divisi':
