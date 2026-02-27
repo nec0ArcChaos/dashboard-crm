@@ -245,6 +245,10 @@ class Dashboard extends CI_Controller {
         $modal_verif_sumber = $this->input->get('modal_verif_sumber');
         $modal_verif_status = $this->input->get('modal_verif_status');
 
+        // Get modal_ketepatan_sumber dan modal_ketepatan_status untuk ketepatan_total
+        $modal_ketepatan_sumber = $this->input->get('modal_ketepatan_sumber');
+        $modal_ketepatan_status = $this->input->get('modal_ketepatan_status');
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
@@ -262,6 +266,12 @@ class Dashboard extends CI_Controller {
         }
         if ($modal_verif_status && $modal_verif_status !== 'all') {
             $extra['modal_verif_status'] = $modal_verif_status;
+        }
+        if ($modal_ketepatan_sumber && $modal_ketepatan_sumber !== 'all') {
+            $extra['modal_ketepatan_sumber'] = $modal_ketepatan_sumber;
+        }
+        if ($modal_ketepatan_status && $modal_ketepatan_status !== 'all') {
+            $extra['modal_ketepatan_status'] = $modal_ketepatan_status;
         }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
@@ -559,6 +569,8 @@ class Dashboard extends CI_Controller {
             $modal_sumber      = $this->input->get('modal_sumber');
             $modal_eskalasi    = $this->input->get('modal_eskalasi');
             $modal_ketepatan   = $this->input->get('modal_ketepatan');
+            $modal_verif_sumber= $this->input->get('modal_verif_sumber');
+            $modal_verif_status= $this->input->get('modal_verif_status');
             $filter            = $this->_get_filter();
 
             // Jika tipe drilldown_verifikasi, gunakan fungsi khusus yang konsisten
@@ -639,6 +651,12 @@ class Dashboard extends CI_Controller {
             }
             if ($modal_eskalasi && $modal_eskalasi !== 'all') {
                 $extra['modal_eskalasi'] = $modal_eskalasi;
+            }
+            if ($modal_verif_sumber && $modal_verif_sumber !== 'all') {
+                $extra['modal_verif_sumber'] = $modal_verif_sumber;
+            }
+            if ($modal_verif_status && $modal_verif_status !== 'all') {
+                $extra['modal_verif_status'] = $modal_verif_status;
             }
 
             // Ambil data untuk export (tanpa pagination)

@@ -57,6 +57,30 @@
             </div>
           </div>
         </div>
+        <div id="ketepatanTotalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
+            
+            <!-- Filter Sumber -->
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
+              <div class="d-flex gap-2">
+                <label style="margin:0"><input type="checkbox" id="ketepatanTotalSemua" checked onchange="toggleKetepatanTotalAll(this)"> <span style="font-size:12px">Semua</span></label>
+                <label style="margin:0"><input type="checkbox" id="ketepatanTotalKonsumen" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Konsumen</span></label>
+                <label style="margin:0"><input type="checkbox" id="ketepatanTotalSosmed" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Sosmed</span></label>
+              </div>
+            </div>
+
+            <!-- Filter Status Ketepatan -->
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Status:</label>
+              <div class="d-flex gap-2">
+                <label style="margin:0"><input type="checkbox" id="ketepatanTotalOnTime" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">On Time</span></label>
+                <label style="margin:0"><input type="checkbox" id="ketepatanTotalLate" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Late</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="modalContent"></div>
         <div id="modalPagination" class="mt-3"></div>
       </div>
@@ -311,6 +335,8 @@ let _modalEskalasiFilter = 'all'; // Untuk filter eskalasi di dalam modal (all, 
 let _modalKetepatanFilter = 'all'; // Untuk filter ketepatan di dalam modal (all, ontime, late)
 let _modalVerifTotalSumber = 'all'; // Filter sumber untuk verif_total (all, konsumen, sosmed)
 let _modalVerifTotalStatus = 'all'; // Filter status untuk verif_total (all, verified, unverified)
+let _modalKetepatanTotalSumber = 'all'; // Filter sumber untuk ketepatan_total (all, konsumen, sosmed)
+let _modalKetepatanTotalStatus = 'all'; // Filter status untuk ketepatan_total (all, ontime, late)
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
@@ -319,19 +345,34 @@ function openModal(type, extra = {}) {
   _modalKetepatanFilter = extra.ketepatan_type || 'all'; // Set filter ketepatan dari parameter extra
   _modalVerifTotalSumber = 'all'; // Reset filter sumber verif_total
   _modalVerifTotalStatus = 'all'; // Reset filter status verif_total
+  _modalKetepatanTotalSumber = 'all'; // Reset filter sumber ketepatan_total
+  _modalKetepatanTotalStatus = 'all'; // Reset filter status ketepatan_total
 
   // Tampilkan/sembunyikan filter berdasarkan tipe modal
   const verifTotalFilters = document.getElementById('verifTotalFilters');
+  const ketepatanTotalFilters = document.getElementById('ketepatanTotalFilters');
+  
   if (type === 'verif_total') {
     verifTotalFilters.style.display = 'block';
+    ketepatanTotalFilters.style.display = 'none';
     // Reset checkbox
     document.getElementById('verifTotalSemua').checked = true;
     document.getElementById('verifTotalKonsumen').checked = false;
     document.getElementById('verifTotalSosmed').checked = false;
     document.getElementById('verifTotalTerverif').checked = false;
     document.getElementById('verifTotalBelumVerif').checked = false;
+  } else if (type === 'ketepatan_total') {
+    ketepatanTotalFilters.style.display = 'block';
+    verifTotalFilters.style.display = 'none';
+    // Reset checkbox
+    document.getElementById('ketepatanTotalSemua').checked = true;
+    document.getElementById('ketepatanTotalKonsumen').checked = false;
+    document.getElementById('ketepatanTotalSosmed').checked = false;
+    document.getElementById('ketepatanTotalOnTime').checked = false;
+    document.getElementById('ketepatanTotalLate').checked = false;
   } else {
     verifTotalFilters.style.display = 'none';
+    ketepatanTotalFilters.style.display = 'none';
   }
 
   document.getElementById('modalTitle').textContent = 'Memuat data...';
@@ -391,6 +432,55 @@ function updateVerifTotalFilters() {
   loadModalPage(1);
 }
 
+function toggleKetepatanTotalAll(checkbox) {
+  if (checkbox.checked) {
+    // Jika "Semua" di-check, uncheck yang lain
+    document.getElementById('ketepatanTotalKonsumen').checked = false;
+    document.getElementById('ketepatanTotalSosmed').checked = false;
+    document.getElementById('ketepatanTotalOnTime').checked = false;
+    document.getElementById('ketepatanTotalLate').checked = false;
+    _modalKetepatanTotalSumber = 'all';
+    _modalKetepatanTotalStatus = 'all';
+  }
+  loadModalPage(1);
+}
+
+function updateKetepatanTotalFilters() {
+  // Uncheck "Semua" jika ada filter lain yang di-check
+  const konsumen = document.getElementById('ketepatanTotalKonsumen').checked;
+  const sosmed = document.getElementById('ketepatanTotalSosmed').checked;
+  const ontime = document.getElementById('ketepatanTotalOnTime').checked;
+  const late = document.getElementById('ketepatanTotalLate').checked;
+
+  if (konsumen || sosmed || ontime || late) {
+    document.getElementById('ketepatanTotalSemua').checked = false;
+  }
+
+  // Set sumber filter
+  if (konsumen && !sosmed) {
+    _modalKetepatanTotalSumber = 'konsumen';
+  } else if (sosmed && !konsumen) {
+    _modalKetepatanTotalSumber = 'sosmed';
+  } else if (konsumen && sosmed) {
+    _modalKetepatanTotalSumber = 'all';
+  } else {
+    _modalKetepatanTotalSumber = 'all';
+  }
+
+  // Set status ketepatan filter
+  if (ontime && !late) {
+    _modalKetepatanTotalStatus = 'ontime';
+  } else if (late && !ontime) {
+    _modalKetepatanTotalStatus = 'late';
+  } else if (ontime && late) {
+    _modalKetepatanTotalStatus = 'all';
+  } else {
+    _modalKetepatanTotalStatus = 'all';
+  }
+
+  loadModalPage(1);
+}
+
 function loadModalPage(page) {
   const params = new URLSearchParams({
     type:      _currentModal.type,
@@ -406,6 +496,8 @@ function loadModalPage(page) {
     modal_ketepatan: _modalKetepatanFilter, // Filter ketepatan (all, ontime, late)
     modal_verif_sumber: _modalVerifTotalSumber, // Filter sumber untuk verif_total
     modal_verif_status: _modalVerifTotalStatus, // Filter status untuk verif_total
+    modal_ketepatan_sumber: _modalKetepatanTotalSumber, // Filter sumber untuk ketepatan_total
+    modal_ketepatan_status: _modalKetepatanTotalStatus, // Filter status untuk ketepatan_total
   });
 
   const fetchUrl = '/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString();
@@ -445,6 +537,7 @@ function loadModalPage(page) {
         esk_sosmed_belum:    `Sosmed — Belum Eskalasi (${res.total.toLocaleString('id')})`,
         status:              `Status Komplain (${res.total.toLocaleString('id')})`,
         divisi:              `Divisi ${_currentModal.extra?.divisi || ''} (${res.total.toLocaleString('id')})`,
+        ketepatan_total:     `Total Komplain — Ketepatan Waktu (${res.total.toLocaleString('id')})`,
       };
       document.getElementById('modalTitle').textContent = titleMap[_currentModal.type] || 'Detail Komplain';
 
@@ -586,6 +679,8 @@ if (document.getElementById('btnExport')) {
       modal_sumber: _modalSumberFilter,
       modal_eskalasi: _modalEskalasiFilter,
       modal_ketepatan: _modalKetepatanFilter,
+      modal_verif_sumber: _modalVerifTotalSumber,
+      modal_verif_status: _modalVerifTotalStatus,
     });
     window.location.href = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
   });

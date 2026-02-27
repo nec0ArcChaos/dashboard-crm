@@ -574,6 +574,10 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
+            case 'ketepatan_total':
+                // Tampilkan semua komplain untuk ketepatan waktu
+                // Filter sumber dan status ketepatan akan diaplikasikan di bawah
+                break;
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
@@ -626,6 +630,32 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
                 $this->db->where('t.escalation_at IS NULL', null, false);
+            }
+        }
+
+        // Apply modal ketepatan sumber filter untuk ketepatan_total modal
+        if (!empty($extra['modal_ketepatan_sumber'])) {
+            if ($extra['modal_ketepatan_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_ketepatan_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal ketepatan status filter (on time vs late)
+        if (!empty($extra['modal_ketepatan_status'])) {
+            if ($extra['modal_ketepatan_status'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan_status'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
             }
         }
 
@@ -731,6 +761,10 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
+            case 'ketepatan_total':
+                // Tampilkan semua komplain untuk ketepatan waktu
+                // Filter sumber dan status ketepatan akan diaplikasikan di bawah
+                break;
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
@@ -795,6 +829,32 @@ class Dashboard_model extends CI_Model {
                 // Using a raw where clause to properly compare dates
                 $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
             } elseif ($extra['modal_ketepatan'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
+            }
+        }
+
+        // Apply modal ketepatan sumber filter untuk ketepatan_total modal
+        if (!empty($extra['modal_ketepatan_sumber'])) {
+            if ($extra['modal_ketepatan_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_ketepatan_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal ketepatan status filter (on time vs late)
+        if (!empty($extra['modal_ketepatan_status'])) {
+            if ($extra['modal_ketepatan_status'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan_status'] === 'late') {
                 // Late: done_date > due_date
                 $this->db->where('t.done_date IS NOT NULL', null, false);
                 $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
@@ -1112,6 +1172,10 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
+            case 'ketepatan_total':
+                // Tampilkan semua komplain untuk ketepatan waktu
+                // Filter sumber dan status ketepatan akan diaplikasikan di bawah
+                break;
             case 'status':
                 if (!empty($extra['status_id'])) {
                     $this->db->where('t.status', $extra['status_id']);
@@ -1204,6 +1268,32 @@ class Dashboard_model extends CI_Model {
                 // Using a raw where clause to properly compare dates
                 $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
             } elseif ($extra['modal_ketepatan'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
+            }
+        }
+
+        // Apply modal ketepatan sumber filter untuk ketepatan_total modal
+        if (!empty($extra['modal_ketepatan_sumber'])) {
+            if ($extra['modal_ketepatan_sumber'] === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($extra['modal_ketepatan_sumber'] === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+
+        // Apply modal ketepatan status filter (on time vs late)
+        if (!empty($extra['modal_ketepatan_status'])) {
+            if ($extra['modal_ketepatan_status'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan_status'] === 'late') {
                 // Late: done_date > due_date
                 $this->db->where('t.done_date IS NOT NULL', null, false);
                 $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
