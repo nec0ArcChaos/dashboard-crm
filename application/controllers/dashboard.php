@@ -91,9 +91,13 @@ class Dashboard extends CI_Controller {
                 'pct'    => $pct,
             ];
             $total_ketepatan += $row['total'];
-            if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['divisi']; }
-            if ($pct < $min_ontime_pct) { $min_ontime_pct = $pct; $min_divisi = $row['divisi']; }
-            if ($pct >= 80) $divisi_atas_80++; else $divisi_bawah_80++;
+            
+            // Hanya hitung statistik untuk divisi yang memiliki data (total > 0)
+            if ($row['total'] > 0) {
+                if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['divisi']; }
+                if ($pct < $min_ontime_pct) { $min_ontime_pct = $pct; $min_divisi = $row['divisi']; }
+                if ($pct >= 80) $divisi_atas_80++; else $divisi_bawah_80++;
+            }
         }
 
         // ---- SECTION 04: RATING ----

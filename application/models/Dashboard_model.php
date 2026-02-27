@@ -231,17 +231,34 @@ class Dashboard_model extends CI_Model {
      * Ketepatan waktu per divisi (on time = done_date <= due_date)
      */
     public function get_ketepatan_waktu($filter = []) {
+        // 1. Ambil SEMUA divisi unik dari cm_category
+        $divisi_sql = "
+            SELECT DISTINCT c.divisi
+            FROM cm_category c
+            WHERE c.divisi IS NOT NULL
+            ORDER BY c.divisi
+        ";
+        $divisi_query = $this->db->query($divisi_sql);
+        $all_divisi = $divisi_query->result_array();
+
+        // 2. Ambil data ketepatan waktu per divisi
+        // HANYA ambil task dengan status = 6 (Done), cek on-time vs late berdasarkan due_date vs done_date
         $sql = "
             SELECT
                 c.divisi,
                 COUNT(*) as total,
-                SUM(CASE WHEN t.done_date IS NOT NULL AND t.done_date <= CONCAT(t.due_date, ' 23:59:59')
-                         AND t.due_date != '0000-00-00' THEN 1 ELSE 0 END) as ontime,
-                SUM(CASE WHEN t.done_date IS NOT NULL AND t.done_date > CONCAT(t.due_date, ' 23:59:59')
-                         AND t.due_date != '0000-00-00' THEN 1 ELSE 0 END) as late
+                SUM(CASE WHEN t.done_date IS NOT NULL 
+                         AND CAST(t.done_date AS DATE) <= t.due_date
+                         AND t.due_date != '0000-00-00' 
+                         THEN 1 ELSE 0 END) as ontime,
+                SUM(CASE WHEN t.done_date IS NOT NULL 
+                         AND CAST(t.done_date AS DATE) > t.due_date
+                         AND t.due_date != '0000-00-00' 
+                         THEN 1 ELSE 0 END) as late
             FROM cm_task t
             LEFT JOIN cm_category c ON c.id = t.id_category
-            WHERE t.escalation_at IS NOT NULL
+            WHERE t.status = 6
+              AND t.done_date IS NOT NULL
               AND c.divisi IS NOT NULL
         ";
 
@@ -264,37 +281,57 @@ class Dashboard_model extends CI_Model {
             $params[] = $filter['divisi'];
         }
 
-        $sql .= " GROUP BY c.divisi HAVING total > 0 ORDER BY c.divisi";
+        $sql .= " GROUP BY c.divisi ORDER BY c.divisi";
 
         $query = $this->db->query($sql, $params);
         $rows  = $query->result_array();
 
-        // Normalisasi divisi label agar konsisten dengan frontend
-        $divisi_map = [
-            'Project'  => 'Project',
-            'Buspro'   => 'Buspro (Berkas)',
-            'Estate'   => 'Estate',
-            'Finance'  => 'Finance',
-            'Legal'    => 'Legal',
-            'MEP'      => 'MEP',
-            'Sales'    => 'Sales/Mkt',
-            'CRM'      => 'Sosmed',
-            'Aftersales' => 'Aftersales',
-        ];
-
-        $result = [];
+        // 3. Buat map dari hasil query untuk lookup cepat
+        $ketepatan_map = [];
         foreach ($rows as $row) {
-            $label = isset($divisi_map[$row['divisi']]) ? $divisi_map[$row['divisi']] : $row['divisi'];
-            // Cari divisi yang sama di hasil sebelumnya (Serah Terima)
-            $serah = ($row['divisi'] === 'Project' && strpos($row['divisi'], 'Serah') !== false);
-
-            $result[] = [
-                'divisi' => $label,
+            $ketepatan_map[$row['divisi']] = [
                 'total'  => (int) $row['total'],
                 'ontime' => (int) $row['ontime'],
                 'late'   => (int) $row['late'],
             ];
         }
+
+        // 4. Daftar divisi yang direkam dalam database (sesuai dengan requirement)
+        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate, Rumah dan Bangunan, Other
+        $valid_divisi = [
+            'Project',
+            'MEP', 
+            'Finance',
+            'Buspro',
+            'Legal',
+            'Sales',
+            'CRM',
+            'Estate',
+            'Rumah dan Bangunan',
+            'Other',
+        ];
+
+        // 5. Susun result dengan SEMUA divisi yang valid, bahkan yang tidak memiliki data
+        $result = [];
+        foreach ($valid_divisi as $divisi_name) {
+            // Jika divisi memiliki data, gunakan data tersebut, jika tidak gunakan 0
+            $data = isset($ketepatan_map[$divisi_name]) ? $ketepatan_map[$divisi_name] : [
+                'total'  => 0,
+                'ontime' => 0,
+                'late'   => 0,
+            ];
+
+            // Hanya include jika ada filter divisi spesifik, atau include semua jika tidak ada filter
+            if (empty($filter['divisi']) || $filter['divisi'] === 'all' || $filter['divisi'] === $divisi_name) {
+                $result[] = [
+                    'divisi' => $divisi_name,
+                    'total'  => $data['total'],
+                    'ontime' => $data['ontime'],
+                    'late'   => $data['late'],
+                ];
+            }
+        }
+
         return $result;
     }
 
