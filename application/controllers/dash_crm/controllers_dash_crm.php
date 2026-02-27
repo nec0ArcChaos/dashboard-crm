@@ -5,11 +5,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Dashboard Controller
  * MVC CodeIgniter 3 — CRM Monitoring Komplain Konsumen
  */
-class Dashboard extends CI_Controller {
+class Controllers_dash_crm extends CI_Controller {
 
     public function __construct() {
         parent::__construct();
-        $this->load->model('Dashboard_model', 'dashboard_m');
+        $this->load->model('dash_crm/model_dash_crm', 'dashboard_m');
         $this->load->helper(['url', 'date']);
         $this->load->library('session');
     }
@@ -211,9 +211,9 @@ class Dashboard extends CI_Controller {
             ]),
         ];
 
-        $this->load->view('partials/header', $data);
-        $this->load->view('dashboard/index', $data);
-        $this->load->view('partials/footer', $data);
+        $this->load->view('dashboard_crm/header', $data);
+        $this->load->view('dashboard_crm/index', $data);
+        $this->load->view('dashboard_crm/footer', $data);
     }
 
     // ============================================================

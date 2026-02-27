@@ -5,7 +5,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Dashboard_model
  * Model untuk mengambil data dashboard CRM dari database db_crm
  */
-class Dashboard_model extends CI_Model {
+class Model_dash_crm extends CI_Model {
 
     public function __construct() {
         parent::__construct();
