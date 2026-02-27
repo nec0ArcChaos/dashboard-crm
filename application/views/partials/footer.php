@@ -291,7 +291,7 @@ function loadModalPage(page) {
     modal_ketepatan: _modalKetepatanFilter, // Filter ketepatan (all, ontime, late)
   });
 
-  const fetchUrl = BASE_URL + 'dashboard/modal_detail?' + params.toString();
+  const fetchUrl = '/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString();
   console.log('Loading modal from:', fetchUrl);
 
   fetch(fetchUrl)
@@ -450,7 +450,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
     date_from: filterGlobal.date_from,
     date_to:   filterGlobal.date_to,
   });
-  window.open(BASE_URL + 'dashboard/modal_detail?' + params.toString(), '_blank');
+  window.open('/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString(), '_blank');
 });
 
 // Drilldown button
@@ -480,7 +480,7 @@ function loadDrilldownPage(page) {
     divisi:    filterGlobal.divisi,
   });
 
-  const fetchUrl = BASE_URL + 'dashboard/drilldown_verifikasi?' + params.toString();
+  const fetchUrl = '/dashboard-crm/index.php/dashboard/drilldown_verifikasi?' + params.toString();
   console.log('Fetching drilldown from:', fetchUrl);
 
   fetch(fetchUrl)
@@ -584,11 +584,11 @@ function applyFilter() {
   const t = document.getElementById('dateTo').value;
   const s = document.getElementById('filterSumber').value;
   const d = document.getElementById('filterDivisi').value;
-  window.location.href = BASE_URL + 'dashboard?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
+  window.location.href = '/dashboard-crm/index.php/dashboard?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
 }
 
 function resetFilter() {
-  window.location.href = BASE_URL + 'dashboard?date_from=2025-01-01&date_to=' + new Date().toISOString().split('T')[0] + '&sumber=all&divisi=all';
+  window.location.href = '/dashboard-crm/index.php/dashboard?date_from=2025-01-01&date_to=' + new Date().toISOString().split('T')[0] + '&sumber=all&divisi=all';
 }
 </script>
 </body>
