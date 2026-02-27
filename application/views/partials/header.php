@@ -15,29 +15,6 @@
   }
   body { background: #F4F6FA; font-size: 14px; }
 
-  /* HEADER */
-  .app-header {
-    background: var(--navy);
-    height: 64px;
-    position: sticky; top: 0; z-index: 1030;
-    box-shadow: 0 2px 16px rgba(0,0,0,.3);
-  }
-  .logo-box {
-    width: 36px; height: 36px; background: #1A56DB;
-    border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .badge-live {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(14,159,110,.15); border: 1px solid rgba(14,159,110,.3);
-    color: #34D399; border-radius: 100px; padding: 4px 10px; font-size: 11px; font-weight: 600;
-  }
-  .badge-live::before {
-    content: ''; width: 6px; height: 6px; border-radius: 50%; background: #34D399;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-
   /* CARDS */
   .kpi-card { border: 1px solid #E4E8F0; border-radius: 14px; background: #fff; padding: 20px 22px; position: relative; overflow: hidden; transition: box-shadow .15s, transform .15s; box-shadow: 0 1px 3px rgba(15,27,45,.06); }
   .kpi-card:hover { box-shadow: 0 4px 16px rgba(15,27,45,.10); transform: translateY(-2px); }
@@ -107,20 +84,3 @@
 </style>
 </head>
 <body>
-
-<!-- HEADER -->
-<header class="app-header d-flex align-items-center px-3 px-md-4">
-  <div class="d-flex align-items-center gap-3 me-auto">
-    <div class="logo-box">
-      <i class="bi bi-grid-fill text-white fs-5"></i>
-    </div>
-    <div>
-      <div class="text-white fw-semibold" style="font-size:15px">Dashboard CRM — Monitoring Komplain</div>
-      <div style="color:#8899BB;font-size:12px">Developer Perumahan Subsidi · Board of Directors</div>
-    </div>
-  </div>
-  <div class="d-flex align-items-center gap-3">
-    <span class="badge-live">LIVE</span>
-    <code style="color:#5A6E99;font-size:12px" id="clock">--:--</code>
-  </div>
-</header>

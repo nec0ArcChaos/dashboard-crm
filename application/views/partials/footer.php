@@ -100,11 +100,13 @@ Chart.defaults.font.family = "system-ui, sans-serif";
 Chart.defaults.plugins.legend.display = false;
 
 // ============================================================
-// CLOCK
+// CLOCK (if header element exists)
 // ============================================================
 function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const clockEl = document.getElementById('clock');
+  if (clockEl) {
+    clockEl.textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
 }
 setInterval(updateClock,1000); updateClock();
 
