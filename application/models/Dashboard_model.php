@@ -957,6 +957,65 @@ class Dashboard_model extends CI_Model {
     }
 
     // ============================================================
+    // ============================================================
+    // EXPORT DRILLDOWN — Konsisten dengan drilldown_verifikasi
+    // ============================================================
+    public function get_drilldown_verifikasi_export($filter = [], $drilldown_sumber = null) {
+        $this->db->select('
+            t.id_task,
+            t.konsumen,
+            t.project as lokasi,
+            t.blok,
+            t.id_project,
+            t.id_category,
+            c.divisi,
+            c.category as jenis_kategori,
+            t.status,
+            s.status as status_label,
+            t.created_at
+        ');
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('cm_status s', 's.id = t.status', 'left');
+
+        // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
+        // HARUS SAMA dengan get_drilldown_verifikasi
+        $this->db->where_not_in('t.status', [1, 2, 8, 9]);
+
+        // Apply global filters
+        if (!empty($filter['date_from'])) {
+            $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+        
+        // Global sumber filter (dari main filter bar)
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        
+        // Drilldown sumber filter (dari modal filter, override global jika ada)
+        if (!empty($drilldown_sumber) && $drilldown_sumber !== 'all') {
+            if ($drilldown_sumber === 'konsumen') {
+                $this->db->where('t.status_konsumen', 1);
+            } elseif ($drilldown_sumber === 'sosmed') {
+                $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+            }
+        }
+        
+        // Divisi filter
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+
+        $this->db->order_by('t.created_at', 'DESC');
+
+        return $this->db->get()->result_array();
+    }
+
     // EXPORT — Get data lengkap untuk export (tanpa pagination)
     // ============================================================
     /**
@@ -1029,8 +1088,42 @@ class Dashboard_model extends CI_Model {
                 break;
             case 'divisi':
                 if (!empty($extra['divisi'])) {
-                    $this->db->where('c.divisi', $extra['divisi']);
-                    $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                    // Reverse mapping: konversi label kembali ke database value
+                    $divisi_reverse_map = [
+                        'Project'            => 'Project',
+                        'Buspro (Berkas)'    => 'Buspro',
+                        'Estate'             => 'Estate',
+                        'Finance'            => 'Finance',
+                        'Legal'              => 'Legal',
+                        'MEP'                => 'MEP',
+                        'Sales/Mkt'          => 'Sales',
+                        'Sosmed'             => 'CRM',
+                        'Aftersales'         => 'Aftersales',
+                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                    ];
+                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
+                        ? $divisi_reverse_map[$extra['divisi']] 
+                        : $extra['divisi'];
+                    
+                    // Query kategori dari divisi ini
+                    $divisi_category_ids = [];
+                    $cat_result = $this->db->query(
+                        "SELECT id FROM cm_category WHERE divisi = ?",
+                        [$db_divisi]
+                    )->result_array();
+                    
+                    $divisi_category_ids = array_column($cat_result, 'id');
+                    
+                    if (!empty($divisi_category_ids)) {
+                        // Gunakan kategori dari divisi untuk filter id_category
+                        $this->db->where_in('t.id_category', $divisi_category_ids);
+                        // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
+                        $this->db->where('t.done_date IS NOT NULL', null, false);
+                        $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                    } else {
+                        // Tidak ada kategori untuk divisi ini, return no results
+                        $this->db->where('1', '0');
+                    }
                 }
                 break;
         }
@@ -1050,6 +1143,23 @@ class Dashboard_model extends CI_Model {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
                 $this->db->where('t.escalation_at IS NULL', null, false);
+            }
+        }
+
+        // Apply modal ketepatan filter (on time vs late) — UNTUK EXPORT KETEPATAN
+        if (!empty($extra['modal_ketepatan'])) {
+            if ($extra['modal_ketepatan'] === 'ontime') {
+                // On Time: done_date <= due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
+            } elseif ($extra['modal_ketepatan'] === 'late') {
+                // Late: done_date > due_date
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
+                // Using a raw where clause to properly compare dates
+                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
             }
         }
 

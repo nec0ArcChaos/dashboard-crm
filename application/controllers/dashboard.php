@@ -355,18 +355,7 @@ class Dashboard extends CI_Controller {
         $offset = ($page - 1) * $per_page;
         $paginated_data = array_slice($formatted_data, $offset, $per_page);
 
-        // Export to Excel
-        if ($export === 'excel') {
-            $this->output
-                ->set_content_type('application/json')
-                ->set_output(json_encode([
-                    'success' => true,
-                    'data'    => $formatted_data, // Export semua data, tidak per-page
-                    'total'   => $total,
-                ]));
-            return;
-        }
-
+        // Jangan export di sini, gunakan endpoint export_ketepatan_data() untuk file download
         $this->output
             ->set_content_type('application/json')
             ->set_output(json_encode([
@@ -376,6 +365,129 @@ class Dashboard extends CI_Controller {
                 'page'    => $page,
                 'per_page'=> $per_page,
             ]));
+    }
+
+    // ============================================================
+    // EXPORT — Export ketepatan waktu ke CSV
+    // ============================================================
+    public function export_ketepatan_data() {
+        try {
+            $ketepatan = $this->input->get('ketepatan') ?: 'all';
+            $filter    = $this->_get_filter();
+
+            // Ambil SEMUA data ketepatan global
+            $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
+
+            // Format dan filter data berdasarkan ketepatan
+            $formatted_data = [];
+            foreach ($all_rows as $row) {
+                // Tentukan ketepatan waktu
+                $waktu_status = '-';
+                if ($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00') {
+                    if ($row['due_date'] && $row['due_date'] !== '0000-00-00') {
+                        $done = strtotime($row['done_date']);
+                        $due  = strtotime($row['due_date'] . ' 23:59:59');
+                        $waktu_status = ($done <= $due) ? 'On Time' : 'Late';
+                    } else {
+                        $waktu_status = 'Done';
+                    }
+                }
+
+                // Filter berdasarkan ketepatan yang dipilih
+                if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
+                    continue;
+                }
+                if ($ketepatan === 'late' && $waktu_status !== 'Late') {
+                    continue;
+                }
+
+                $formatted_data[] = [
+                    'id_task'      => $row['id_task'],
+                    'konsumen'     => $row['konsumen'],
+                    'lokasi'       => $row['project'],
+                    'blok'         => $row['blok'] ?: '-',
+                    'divisi'       => $row['divisi'],
+                    'jenis'        => $row['jenis'] ?: $row['category'],
+                    'due_date'     => $row['due_date'] && $row['due_date'] !== '0000-00-00' ? date('d-m-Y', strtotime($row['due_date'])) : '-',
+                    'done_date'    => $row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00' ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-',
+                    'waktu_status' => $waktu_status,
+                ];
+            }
+
+            if (empty($formatted_data)) {
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'error'   => 'Tidak ada data untuk diexport',
+                    ]));
+                return;
+            }
+
+            // Helper sanitize function
+            $sanitize = function($value, $default = '') {
+                if ($value === null || $value === false) {
+                    return $default;
+                }
+                return trim(strip_tags((string)$value));
+            };
+
+            // Prepare CSV headers
+            $headers = [
+                'ID Komplain',
+                'Konsumen',
+                'Lokasi',
+                'Blok',
+                'Divisi',
+                'Jenis',
+                'Due Date',
+                'Done Date',
+                'Status Ketepatan',
+            ];
+
+            // Build CSV content
+            $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
+
+            foreach ($formatted_data as $row) {
+                $line = [
+                    $sanitize($row['id_task'], '-'),
+                    $sanitize($row['konsumen'], '-'),
+                    $sanitize($row['lokasi'], '-'),
+                    $sanitize($row['blok'], '-'),
+                    $sanitize($row['divisi'], '-'),
+                    $sanitize($row['jenis'], '-'),
+                    $sanitize($row['due_date'], '-'),
+                    $sanitize($row['done_date'], '-'),
+                    $sanitize($row['waktu_status'], '-'),
+                ];
+                $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
+            }
+
+            // Generate filename dengan timestamp
+            $timestamp = date('Y-m-d_H-i-s');
+            $ketepatan_label = $ketepatan === 'ontime' ? 'on-time' : ($ketepatan === 'late' ? 'late' : 'semua');
+            $filename = "export_ketepatan_{$ketepatan_label}_{$timestamp}.csv";
+
+            // Output CSV file
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+
+            echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
+            echo $csv_content;
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Export Ketepatan Error: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ]));
+        }
     }
 
     // ============================================================
@@ -431,17 +543,84 @@ class Dashboard extends CI_Controller {
     // ============================================================
     public function export_modal_data() {
         try {
-            $type      = $this->input->get('type');
-            $status_id = $this->input->get('status_id');
-            $divisi    = $this->input->get('divisi');
-            $filter    = $this->_get_filter();
+            $type              = $this->input->get('type');
+            $status_id         = $this->input->get('status_id');
+            $divisi            = $this->input->get('divisi');
+            $modal_sumber      = $this->input->get('modal_sumber');
+            $modal_eskalasi    = $this->input->get('modal_eskalasi');
+            $modal_ketepatan   = $this->input->get('modal_ketepatan');
+            $filter            = $this->_get_filter();
 
-            // Get modal_sumber filter untuk verifikasi modal
-            $modal_sumber = $this->input->get('modal_sumber');
+            // Jika tipe drilldown_verifikasi, gunakan fungsi khusus yang konsisten
+            if ($type === 'drilldown_verifikasi') {
+                // Support filter drilldown_sumber yang di-pass dari JavaScript
+                $drilldown_sumber = $this->input->get('modal_sumber');
+                $rows = $this->dashboard_m->get_drilldown_verifikasi_export($filter, $drilldown_sumber);
+                
+                if (empty($rows)) {
+                    $this->output
+                        ->set_content_type('application/json')
+                        ->set_output(json_encode([
+                            'success' => false,
+                            'error'   => 'Tidak ada data untuk diexport',
+                        ]));
+                    return;
+                }
 
-            // Get modal_eskalasi filter untuk eskalasi gabungan modal
-            $modal_eskalasi = $this->input->get('modal_eskalasi');
+                // Helper sanitize function
+                $sanitize = function($value, $default = '') {
+                    if ($value === null || $value === false) {
+                        return $default;
+                    }
+                    return trim(strip_tags((string)$value));
+                };
 
+                // Prepare CSV headers untuk drilldown
+                $headers = [
+                    'ID Komplain',
+                    'Konsumen',
+                    'Lokasi',
+                    'Blok',
+                    'Divisi',
+                    'Jenis',
+                    'Status',
+                    'Tanggal Dibuat',
+                ];
+
+                // Build CSV content
+                $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
+
+                foreach ($rows as $row) {
+                    $line = [
+                        $sanitize($row['id_task'], '-'),
+                        $sanitize($row['konsumen'], '-'),
+                        $sanitize($row['lokasi'], '-'),
+                        $sanitize($row['blok'], '-'),
+                        $sanitize($row['divisi'], '-'),
+                        $sanitize($row['jenis_kategori'], '-'),
+                        $sanitize($row['status_label'], 'Unknown'),
+                        $sanitize($row['created_at'], '-'),
+                    ];
+                    $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
+                }
+
+                // Generate filename dengan timestamp
+                $timestamp = date('Y-m-d_H-i-s');
+                $filename = "export_drilldown_verifikasi_{$timestamp}.csv";
+
+                // Output CSV file
+                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Disposition: attachment; filename="' . $filename . '"');
+                header('Pragma: no-cache');
+                header('Expires: 0');
+                header('Cache-Control: no-store, no-cache, must-revalidate');
+
+                echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
+                echo $csv_content;
+                exit;
+            }
+
+            // Untuk tipe lainnya, gunakan get_detail_modal_export
             $extra = [];
             if ($status_id) $extra['status_id'] = $status_id;
             if ($divisi)    $extra['divisi']     = $divisi;
@@ -474,9 +653,9 @@ class Dashboard extends CI_Controller {
                 return trim(strip_tags((string)$value));
             };
 
-            // Prepare CSV headers
+            // Tentukan header berdasarkan tipe export
             $headers = [
-                'ID Complaint',
+                'ID Komplain',
                 'Konsumen',
                 'Lokasi',
                 'Blok',
@@ -489,29 +668,85 @@ class Dashboard extends CI_Controller {
                 'Catatan Verifikasi',
             ];
 
-            // Build CSV content
+            // Jika tipe divisi (ketepatan), tambahkan kolom ketepatan
+            if ($type === 'divisi' || strpos($type, 'ketepatan') !== false) {
+                $headers = [
+                    'ID Komplain',
+                    'Konsumen',
+                    'Lokasi',
+                    'Blok',
+                    'Divisi',
+                    'Jenis',
+                    'Due Date',
+                    'Done Date',
+                    'Status Ketepatan',
+                    'Tanggal Dibuat',
+                ];
+            }
+
+            // Build CSV headers
             $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
 
+            // Build CSV rows
             foreach ($rows as $row) {
-                $line = [
-                    $sanitize($row['id_task'], '-'),
-                    $sanitize($row['konsumen'], '-'),
-                    $sanitize($row['lokasi'], '-'),
-                    $sanitize($row['blok'], '-'),
-                    $sanitize($row['jenis'] ?: $row['category'], '-'),
-                    $sanitize($row['divisi'], '-'),
-                    $sanitize($row['status_label'], 'Unknown'),
-                    $sanitize($row['created_at'], '-'),
-                    $sanitize($row['verified_at'], '-'),
-                    $sanitize($row['verified_name'], '-'),
-                    $sanitize($row['verified_note'], '-'),
-                ];
+                if ($type === 'divisi' || strpos($type, 'ketepatan') !== false) {
+                    // Format untuk ketepatan
+                    $waktu_status = '-';
+                    if ($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00') {
+                        if ($row['due_date'] && $row['due_date'] !== '0000-00-00') {
+                            $done = strtotime($row['done_date']);
+                            $due  = strtotime($row['due_date'] . ' 23:59:59');
+                            $waktu_status = ($done <= $due) ? 'On Time' : 'Late';
+                        } else {
+                            $waktu_status = 'Done';
+                        }
+                    }
+
+                    // Filter ketepatan jika modal_ketepatan diberikan
+                    if (!empty($modal_ketepatan) && $modal_ketepatan !== 'all') {
+                        if ($modal_ketepatan === 'ontime' && $waktu_status !== 'On Time') {
+                            continue;
+                        }
+                        if ($modal_ketepatan === 'late' && $waktu_status !== 'Late') {
+                            continue;
+                        }
+                    }
+
+                    $line = [
+                        $sanitize($row['id_task'], '-'),
+                        $sanitize($row['konsumen'], '-'),
+                        $sanitize($row['lokasi'], '-'),
+                        $sanitize($row['blok'], '-'),
+                        $sanitize($row['divisi'], '-'),
+                        $sanitize($row['jenis'] ?: $row['category'], '-'),
+                        $row['due_date'] && $row['due_date'] !== '0000-00-00' ? date('d-m-Y', strtotime($row['due_date'])) : '-',
+                        $row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00' ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-',
+                        $waktu_status,
+                        $sanitize($row['created_at'], '-'),
+                    ];
+                } else {
+                    // Format untuk verifikasi dan eskalasi
+                    $line = [
+                        $sanitize($row['id_task'], '-'),
+                        $sanitize($row['konsumen'], '-'),
+                        $sanitize($row['lokasi'], '-'),
+                        $sanitize($row['blok'], '-'),
+                        $sanitize($row['jenis'] ?: $row['category'], '-'),
+                        $sanitize($row['divisi'], '-'),
+                        $sanitize($row['status_label'], 'Unknown'),
+                        $sanitize($row['created_at'], '-'),
+                        $sanitize($row['verified_at'], '-'),
+                        $sanitize($row['verified_name'], '-'),
+                        $sanitize($row['verified_note'], '-'),
+                    ];
+                }
+
                 $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
             }
 
-            // Generate filename dengan timestamp
+            // Generate filename dengan timestamp dan tipe
             $timestamp = date('Y-m-d_H-i-s');
-            $type_label = str_replace(['verif_', 'esk_'], '', $type);
+            $type_label = str_replace(['verif_', 'esk_', 'ketepatan_'], '', $type);
             $filename = "export_komplain_{$type_label}_{$timestamp}.csv";
 
             // Output CSV file
@@ -519,6 +754,7 @@ class Dashboard extends CI_Controller {
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             header('Pragma: no-cache');
             header('Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate');
 
             echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
             echo $csv_content;

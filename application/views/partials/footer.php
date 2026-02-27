@@ -439,12 +439,12 @@ function setSumberEskalasiFilter(eskalasi) {
 
 function exportDrilldownData() {
   const params = new URLSearchParams({
-    type:      'verif_terverifikasi', // Hardcoded untuk drilldown verifikasi
+    type:      'drilldown_verifikasi', // Gunakan tipe khusus untuk drilldown yang konsisten
     date_from: filterGlobal.date_from,
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
-    divisi_filter: filterGlobal.divisi,
-    modal_sumber: _drilldownSumberFilter, // Gunakan filter sumber dari drilldown
+    divisi:    filterGlobal.divisi, // Gunakan 'divisi' bukan 'divisi_filter'
+    modal_sumber: _drilldownSumberFilter, // Jika ada filter sumber di drilldown
   });
   const exportUrl = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
   console.log('Opening drilldown export URL:', exportUrl);
@@ -477,21 +477,24 @@ function renderPagination(total, per_page, current_page) {
   document.getElementById('modalPagination').innerHTML = html;
 }
 
-// Export CSV — buka URL download
-document.getElementById('btnExport').addEventListener('click', () => {
-  const params = new URLSearchParams({
-    type:      _currentModal.type,
-    status_id: _currentModal.extra?.status_id || '',
-    divisi:    _currentModal.extra?.divisi    || '',
-    date_from: filterGlobal.date_from,
-    date_to:   filterGlobal.date_to,
-    sumber:    filterGlobal.sumber,
-    divisi_filter: filterGlobal.divisi,
-    modal_sumber: _modalSumberFilter,
-    modal_eskalasi: _modalEskalasiFilter,
+// Export CSV — Buka download file
+if (document.getElementById('btnExport')) {
+  document.getElementById('btnExport').addEventListener('click', () => {
+    const params = new URLSearchParams({
+      type:      _currentModal.type,
+      status_id: _currentModal.extra?.status_id || '',
+      divisi:    _currentModal.extra?.divisi    || '',
+      date_from: filterGlobal.date_from,
+      date_to:   filterGlobal.date_to,
+      sumber:    filterGlobal.sumber,
+      divisi_filter: filterGlobal.divisi,
+      modal_sumber: _modalSumberFilter,
+      modal_eskalasi: _modalEskalasiFilter,
+      modal_ketepatan: _modalKetepatanFilter,
+    });
+    window.location.href = BASE_URL + 'dashboard/export_modal_data?' + params.toString();
   });
-  window.open('/dashboard-crm/index.php/dashboard/modal_detail?' + params.toString(), '_blank');
-});
+}
 
 // Drilldown button
 document.getElementById('btnDrilldown').addEventListener('click', () => {
@@ -753,16 +756,19 @@ function renderKetepatanGlobalPagination(total, per_page, current_page) {
   document.getElementById('ketepatanGlobalPagination').innerHTML = html;
 }
 
-// Export ketepatan global
-document.getElementById('btnKetepatanExport').addEventListener('click', () => {
-  const params = new URLSearchParams({
-    export:    'excel',
-    ketepatan: _ketepatanGlobalFilter,
-    date_from: filterGlobal.date_from,
-    date_to:   filterGlobal.date_to,
+// Export ketepatan global — Download CSV file
+if (document.getElementById('btnKetepatanExport')) {
+  document.getElementById('btnKetepatanExport').addEventListener('click', () => {
+    const params = new URLSearchParams({
+      ketepatan: _ketepatanGlobalFilter,
+      date_from: filterGlobal.date_from,
+      date_to:   filterGlobal.date_to,
+      sumber:    filterGlobal.sumber,
+      divisi:    filterGlobal.divisi,
+    });
+    window.location.href = BASE_URL + 'dashboard/export_ketepatan_data?' + params.toString();
   });
-  window.open('/dashboard-crm/index.php/dashboard/ketepatan_global?' + params.toString(), '_blank');
-});
+}
 
 // ============================================================
 // FILTER — submit via form GET
