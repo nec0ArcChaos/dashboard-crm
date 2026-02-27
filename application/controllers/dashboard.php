@@ -297,6 +297,88 @@ class Dashboard extends CI_Controller {
     }
 
     // ============================================================
+    // AJAX — Ketepatan Waktu Global (detail semua divisi)
+    // ============================================================
+    public function ketepatan_global() {
+        // Set no-cache headers
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $page       = (int)$this->input->get('page') ?: 1;
+        $per_page   = (int)$this->input->get('per_page') ?: 20;
+        $ketepatan  = $this->input->get('ketepatan') ?: 'all';
+        $export     = $this->input->get('export');
+        $filter     = $this->_get_filter();
+
+        // Ambil SEMUA data ketepatan global (tanpa limit/offset di database)
+        $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
+
+        // Format dan filter data berdasarkan ketepatan
+        $formatted_data = [];
+        foreach ($all_rows as $row) {
+            // Tentukan ketepatan waktu
+            $waktu_status = '-';
+            if ($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00') {
+                if ($row['due_date'] && $row['due_date'] !== '0000-00-00') {
+                    $done = strtotime($row['done_date']);
+                    $due  = strtotime($row['due_date'] . ' 23:59:59');
+                    $waktu_status = ($done <= $due) ? 'On Time' : 'Late';
+                } else {
+                    $waktu_status = 'Done';
+                }
+            }
+
+            // Filter berdasarkan ketepatan yang dipilih
+            if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
+                continue;
+            }
+            if ($ketepatan === 'late' && $waktu_status !== 'Late') {
+                continue;
+            }
+
+            $formatted_data[] = [
+                'id_task'      => $row['id_task'],
+                'konsumen'     => $row['konsumen'],
+                'lokasi'       => $row['project'],
+                'divisi'       => $row['divisi'],
+                'jenis'        => $row['jenis'] ?: $row['category'],
+                'due_date'     => $row['due_date'] && $row['due_date'] !== '0000-00-00' ? date('d-m-Y', strtotime($row['due_date'])) : '-',
+                'done_date'    => $row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00' ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-',
+                'waktu_status' => $waktu_status,
+            ];
+        }
+
+        // Hitung total filtered data
+        $total = count($formatted_data);
+
+        // Implementasikan pagination secara manual
+        $offset = ($page - 1) * $per_page;
+        $paginated_data = array_slice($formatted_data, $offset, $per_page);
+
+        // Export to Excel
+        if ($export === 'excel') {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => true,
+                    'data'    => $formatted_data, // Export semua data, tidak per-page
+                    'total'   => $total,
+                ]));
+            return;
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'success' => true,
+                'data'    => $paginated_data, // Per-page data saja
+                'total'   => $total,
+                'page'    => $page,
+                'per_page'=> $per_page,
+            ]));
+    }
+
+    // ============================================================
     // AJAX — Drilldown Verifikasi (tabel detail komplain)
     // ============================================================
     public function drilldown_verifikasi() {

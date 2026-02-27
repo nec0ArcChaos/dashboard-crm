@@ -1,4 +1,27 @@
 <!-- ============================================================ -->
+<!-- MODAL KETEPATAN WAKTU GLOBAL                                 -->
+<!-- ============================================================ -->
+<div class="modal fade" id="ketepatanGlobalModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold">Ketepatan Waktu Pengerjaan — Detail Semua Divisi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="ketepatanGlobalBody">
+        <div id="ketepatanGlobalLoading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data...</p></div>
+        <div id="ketepatanGlobalContent"></div>
+        <div id="ketepatanGlobalPagination" class="mt-3"></div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btnKetepatanExport">Export Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
 <!-- MODAL DETAIL KOMPLAIN                                        -->
 <!-- ============================================================ -->
 <div class="modal fade" id="detailModal" tabindex="-1">
@@ -575,6 +598,137 @@ function renderDrilldownPagination(total, per_page, current_page) {
   html += '</ul></nav>';
   document.getElementById('modalPagination').innerHTML = html;
 }
+
+// ============================================================
+// GLOBAL KETEPATAN WAKTU MODAL — Detail semua divisi
+// ============================================================
+let _ketepatanGlobalFilter = 'all'; // all, ontime, late
+
+function openKetepatanGlobal() {
+  _ketepatanGlobalFilter = 'all'; // Reset filter
+  document.getElementById('ketepatanGlobalContent').innerHTML = '';
+  document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+  document.getElementById('ketepatanGlobalLoading').style.display = 'block';
+  
+  const ketepatanGlobalModal = new bootstrap.Modal(document.getElementById('ketepatanGlobalModal'));
+  ketepatanGlobalModal.show();
+  loadKetepatanGlobalPage(1);
+}
+
+function loadKetepatanGlobalPage(page) {
+  const params = new URLSearchParams({
+    page:      page,
+    per_page:  20,
+    ketepatan: _ketepatanGlobalFilter, // all, ontime, late
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi:    filterGlobal.divisi,
+  });
+
+  const fetchUrl = '/dashboard-crm/index.php/dashboard/ketepatan_global?' + params.toString();
+  console.log('Loading ketepatan global from:', fetchUrl);
+
+  fetch(fetchUrl)
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      return r.json();
+    })
+    .then(res => {
+      console.log('Ketepatan Global Response:', res);
+      document.getElementById('ketepatanGlobalLoading').style.display = 'none';
+      
+      if (!res.success) {
+        document.getElementById('ketepatanGlobalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
+        return;
+      }
+
+      if (res.data.length === 0) {
+        document.getElementById('ketepatanGlobalContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data.</p>';
+        return;
+      }
+
+      // Render filter buttons
+      let filterButtonsHtml = `
+        <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
+          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('all')">Semua Data</button>
+          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'ontime' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('ontime')">On Time</button>
+          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'late' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('late')">Late</button>
+        </div>
+      `;
+
+      // Render tabel
+      let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+        <div class="table-responsive">
+        <table class="table table-sm modal-table align-middle">
+          <thead><tr>
+            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>Divisi</th><th>Jenis</th><th>Due Date</th><th>Done Date</th><th>Status</th>
+          </tr></thead><tbody>`;
+
+      res.data.forEach(row => {
+        const statusClass = row.waktu_status === 'On Time' ? 'ontime' : row.waktu_status === 'Late' ? 'late' : 'working';
+        html += `<tr>
+          <td><code style="font-size:11px">${row.id_task}</code></td>
+          <td><small>${row.konsumen || '-'}</small></td>
+          <td><small>${row.lokasi || '-'}</small></td>
+          <td><small><strong>${row.divisi || '-'}</strong></small></td>
+          <td><small>${row.jenis || '-'}</small></td>
+          <td><small>${row.due_date || '-'}</small></td>
+          <td><small>${row.done_date || '-'}</small></td>
+          <td><span class="badge-status badge-${statusClass}">${row.waktu_status}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('ketepatanGlobalContent').innerHTML = html;
+
+      renderKetepatanGlobalPagination(res.total, res.per_page, page);
+    })
+    .catch(err => {
+      console.error('Ketepatan Global Error:', err);
+      document.getElementById('ketepatanGlobalLoading').style.display = 'none';
+      document.getElementById('ketepatanGlobalContent').innerHTML = '<p class="text-danger">Koneksi error: ' + err.message + '</p>';
+    });
+}
+
+function setKetepatanGlobalFilter(filterValue) {
+  _ketepatanGlobalFilter = filterValue;
+  loadKetepatanGlobalPage(1); // Reload halaman 1 dengan filter baru
+}
+
+function renderKetepatanGlobalPagination(total, per_page, current_page) {
+  const total_pages = Math.ceil(total / per_page);
+  if (total_pages <= 1) {
+    document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+    return;
+  }
+
+  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
+  if (current_page > 1) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${current_page-1});return false;">‹</a></li>`;
+  }
+  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
+  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
+  for (let p = start; p <= end; p++) {
+    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${p});return false;">${p}</a></li>`;
+  }
+  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${total_pages});return false;">${total_pages}</a></li>`;
+  if (current_page < total_pages) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${current_page+1});return false;">›</a></li>`;
+  }
+  html += '</ul></nav>';
+  document.getElementById('ketepatanGlobalPagination').innerHTML = html;
+}
+
+// Export ketepatan global
+document.getElementById('btnKetepatanExport').addEventListener('click', () => {
+  const params = new URLSearchParams({
+    export:    'excel',
+    ketepatan: _ketepatanGlobalFilter,
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+  });
+  window.open('/dashboard-crm/index.php/dashboard/ketepatan_global?' + params.toString(), '_blank');
+});
 
 // ============================================================
 // FILTER — submit via form GET

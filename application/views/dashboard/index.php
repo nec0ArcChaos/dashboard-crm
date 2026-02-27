@@ -311,10 +311,10 @@
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="kpi-card">
+        <div class="kpi-card" style="cursor: pointer;" onclick="openKetepatanGlobal()">
           <div class="kpi-label">Total Komplain</div>
           <div class="kpi-value"><?= number_format($total_ketepatan, 0, ',', '.') ?></div>
-          <div class="kpi-meta">Semua divisi</div>
+          <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
         </div>
       </div>
     </div>

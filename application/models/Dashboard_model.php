@@ -748,6 +748,60 @@ class Dashboard_model extends CI_Model {
     }
 
     // ============================================================
+    // KETEPATAN GLOBAL — Detail semua divisi tanpa filter per divisi
+    // ============================================================
+
+    /**
+     * Ambil SEMUA detail ketepatan waktu untuk semua divisi (tanpa limit/offset)
+     * Hanya ambil task dengan status = 6 (Done) dan due_date
+     * Filtering ketepatan (ontime/late) dilakukan di controller untuk accuracy
+     * @param array $filter : global filter (date_from, date_to, sumber, divisi)
+     */
+    public function get_ketepatan_global_detail($filter = []) {
+        $this->db->select('
+            t.id_task,
+            t.konsumen,
+            t.project,
+            t.task as jenis,
+            t.due_date,
+            t.done_date,
+            c.divisi,
+            c.category,
+            t.created_at
+        ');
+        $this->db->from('cm_task t');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+
+        // Hanya task dengan status = 6 (Done) yang memiliki due_date
+        $this->db->where('t.status', 6);
+        $this->db->where('t.due_date IS NOT NULL', null, false);
+        $this->db->where('t.due_date !=', '0000-00-00');
+        $this->db->where('t.done_date IS NOT NULL', null, false);
+        $this->db->where('t.done_date !=', '0000-00-00 00:00:00');
+
+        // Apply global filters
+        if (!empty($filter['date_from'])) {
+            $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+
+        $this->db->order_by('t.created_at', 'DESC');
+
+        // PENTING: Ambil SEMUA data, pagination dilakukan di controller
+        return $this->db->get()->result_array();
+    }
+
+    // ============================================================
     // DRILL-DOWN VERIFIKASI — Tabel detail komplain per status
     // ============================================================
     /**
