@@ -4,8 +4,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 /**
  * Dashboard Controller
  * MVC CodeIgniter 3 — CRM Monitoring Komplain Konsumen
+ *
+ * Accessible at: (base_url)/dash_crm/
  */
-class Controllers_dash_crm extends CI_Controller {
+class Dash_crm extends CI_Controller {
 
     public function __construct() {
         parent::__construct();
@@ -90,7 +92,7 @@ class Controllers_dash_crm extends CI_Controller {
                 'pct'    => $pct,
             ];
             $total_ketepatan += $row['total'];
-            
+
             // Hanya hitung statistik untuk divisi yang memiliki data (total > 0)
             if ($row['total'] > 0) {
                 if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['divisi']; }
@@ -576,7 +578,7 @@ class Controllers_dash_crm extends CI_Controller {
                 // Support filter drilldown_sumber yang di-pass dari JavaScript
                 $drilldown_sumber = $this->input->get('modal_sumber');
                 $rows = $this->dashboard_m->get_drilldown_verifikasi_export($filter, $drilldown_sumber);
-                
+
                 if (empty($rows)) {
                     $this->output
                         ->set_content_type('application/json')
