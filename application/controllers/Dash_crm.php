@@ -63,12 +63,23 @@ class Dash_crm extends CI_Controller {
             : 0;
 
         $trend_eskalasi_raw = $this->dashboard_m->get_trend_eskalasi($filter);
+
+        // Indeks hasil DB: ['YYYY-MM' => total]
+        $db_trend = [];
+        foreach ($trend_eskalasi_raw as $row) {
+            $db_trend[$row['bulan']] = (int)$row['total'];
+        }
+
+        // Bangun skeleton bulan lengkap dari date_from s.d date_to (isi 0 untuk bulan tanpa data)
         $trend_labels = [];
         $trend_data   = [];
-        foreach ($trend_eskalasi_raw as $row) {
-            $ts = strtotime($row['bulan'] . '-01');
-            $trend_labels[] = date('M', $ts)."'".date('y', $ts); // e.g. Jan'25
-            $trend_data[]   = (int)$row['total'];
+        $cur = strtotime(date('Y-m-01', strtotime($filter['date_from'])));
+        $end = strtotime(date('Y-m-01', strtotime($filter['date_to'])));
+        while ($cur <= $end) {
+            $key            = date('Y-m', $cur);
+            $trend_labels[] = date('M', $cur)."'".(date('y', $cur));
+            $trend_data[]   = isset($db_trend[$key]) ? $db_trend[$key] : 0;
+            $cur            = strtotime('+1 month', $cur);
         }
 
         // KETEPATAN WAKTU

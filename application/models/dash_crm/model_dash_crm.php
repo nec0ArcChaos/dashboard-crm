@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
@@ -212,7 +212,6 @@ class Model_dash_crm extends CI_Model {
         
         $this->db->group_by("DATE_FORMAT(t.escalation_at, '%Y-%m')");
         $this->db->order_by('bulan', 'ASC');
-        $this->db->limit(14);
         return $this->db->get()->result_array();
     }
 

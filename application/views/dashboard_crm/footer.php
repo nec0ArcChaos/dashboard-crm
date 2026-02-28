@@ -202,7 +202,7 @@ new Chart('chartVerifDonut', {
 new Chart('chartEskalasiTrend', {
   type: 'line',
   data: {
-    labels: trendLabels.length ? trendLabels : ['Jan\'25','Feb\'25','Mar\'25','Apr\'25','Mei\'25','Jun\'25','Jul\'25','Agt\'25','Sep\'25','Okt\'25','Nov\'25','Des\'25','Jan\'26','Feb\'26'],
+    labels: trendLabels,
     datasets:[{
       label:'Eskalasi',
       data: trendData,
