@@ -79,6 +79,8 @@ class Dash_crm extends CI_Controller {
         $max_divisi = '';
         $min_divisi = '';
         $total_ketepatan = 0;
+        $total_ontime    = 0;
+        $total_late      = 0;
         $divisi_bawah_80 = 0;
         $divisi_atas_80  = 0;
 
@@ -92,6 +94,8 @@ class Dash_crm extends CI_Controller {
                 'pct'    => $pct,
             ];
             $total_ketepatan += $row['total'];
+            $total_ontime    += (int)$row['ontime'];
+            $total_late      += (int)$row['late'];
 
             // Hanya hitung statistik untuk divisi yang memiliki data (total > 0)
             if ($row['total'] > 0) {
@@ -184,6 +188,8 @@ class Dash_crm extends CI_Controller {
             'min_ontime_pct'      => $min_ontime_pct,
             'min_divisi'          => $min_divisi,
             'total_ketepatan'     => $total_ketepatan,
+            'total_ontime'        => $total_ontime,
+            'total_late'          => $total_late,
             'divisi_bawah_80'     => $divisi_bawah_80,
             'divisi_atas_80'      => $divisi_atas_80,
 
@@ -324,11 +330,15 @@ class Dash_crm extends CI_Controller {
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
 
-        $page       = (int)$this->input->get('page') ?: 1;
-        $per_page   = (int)$this->input->get('per_page') ?: 20;
-        $ketepatan  = $this->input->get('ketepatan') ?: 'all';
-        $export     = $this->input->get('export');
-        $filter     = $this->_get_filter();
+        $page           = (int)$this->input->get('page') ?: 1;
+        $per_page       = (int)$this->input->get('per_page') ?: 20;
+        $ketepatan      = $this->input->get('ketepatan') ?: 'all';
+        $export         = $this->input->get('export');
+        $filter         = $this->_get_filter();
+        $due_date_from  = $this->input->get('due_date_from')  ?: '';
+        $due_date_to    = $this->input->get('due_date_to')    ?: '';
+        $done_date_from = $this->input->get('done_date_from') ?: '';
+        $done_date_to   = $this->input->get('done_date_to')   ?: '';
 
         // Ambil SEMUA data ketepatan global (tanpa limit/offset di database)
         $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
@@ -349,11 +359,27 @@ class Dash_crm extends CI_Controller {
             }
 
             // Filter berdasarkan ketepatan yang dipilih
-            if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
-                continue;
+            if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') { continue; }
+            if ($ketepatan === 'late'   && $waktu_status !== 'Late')    { continue; }
+
+            // Filter berdasarkan due_date range
+            if ($due_date_from !== '') {
+                if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                if (strtotime($row['due_date']) < strtotime($due_date_from)) { continue; }
             }
-            if ($ketepatan === 'late' && $waktu_status !== 'Late') {
-                continue;
+            if ($due_date_to !== '') {
+                if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                if (strtotime($row['due_date']) > strtotime($due_date_to)) { continue; }
+            }
+
+            // Filter berdasarkan done_date range
+            if ($done_date_from !== '') {
+                if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                if (strtotime($row['done_date']) < strtotime($done_date_from)) { continue; }
+            }
+            if ($done_date_to !== '') {
+                if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                if (strtotime($row['done_date']) > strtotime($done_date_to . ' 23:59:59')) { continue; }
             }
 
             $formatted_data[] = [
@@ -392,8 +418,12 @@ class Dash_crm extends CI_Controller {
     // ============================================================
     public function export_ketepatan_data() {
         try {
-            $ketepatan = $this->input->get('ketepatan') ?: 'all';
-            $filter    = $this->_get_filter();
+            $ketepatan      = $this->input->get('ketepatan')      ?: 'all';
+            $filter         = $this->_get_filter();
+            $due_date_from  = $this->input->get('due_date_from')  ?: '';
+            $due_date_to    = $this->input->get('due_date_to')    ?: '';
+            $done_date_from = $this->input->get('done_date_from') ?: '';
+            $done_date_to   = $this->input->get('done_date_to')   ?: '';
 
             // Ambil SEMUA data ketepatan global
             $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
@@ -414,11 +444,27 @@ class Dash_crm extends CI_Controller {
                 }
 
                 // Filter berdasarkan ketepatan yang dipilih
-                if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
-                    continue;
+                if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') { continue; }
+                if ($ketepatan === 'late'   && $waktu_status !== 'Late')    { continue; }
+
+                // Filter berdasarkan due_date range
+                if ($due_date_from !== '') {
+                    if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                    if (strtotime($row['due_date']) < strtotime($due_date_from)) { continue; }
                 }
-                if ($ketepatan === 'late' && $waktu_status !== 'Late') {
-                    continue;
+                if ($due_date_to !== '') {
+                    if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                    if (strtotime($row['due_date']) > strtotime($due_date_to)) { continue; }
+                }
+
+                // Filter berdasarkan done_date range
+                if ($done_date_from !== '') {
+                    if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                    if (strtotime($row['done_date']) < strtotime($done_date_from)) { continue; }
+                }
+                if ($done_date_to !== '') {
+                    if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                    if (strtotime($row['done_date']) > strtotime($done_date_to . ' 23:59:59')) { continue; }
                 }
 
                 $formatted_data[] = [
@@ -452,7 +498,12 @@ class Dash_crm extends CI_Controller {
                 return trim(strip_tags((string)$value));
             };
 
-            // Prepare CSV headers
+            // Helper escape HTML entities untuk output ke Excel (HTML table)
+            $esc = function($value) {
+                return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+            };
+
+            // Kolom header Excel
             $headers = [
                 'ID Komplain',
                 'Konsumen',
@@ -465,38 +516,53 @@ class Dash_crm extends CI_Controller {
                 'Status Ketepatan',
             ];
 
-            // Build CSV content
-            $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
+            // Build Excel (HTML table) content
+            $ketepatan_label = $ketepatan === 'ontime' ? 'On Time' : ($ketepatan === 'late' ? 'Late' : 'Semua');
+            $excel_content  = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            $excel_content .= '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+            $excel_content .= '<x:Name>Ketepatan ' . $esc($ketepatan_label) . '</x:Name>';
+            $excel_content .= '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+            $excel_content .= '<body><table border="1" style="border-collapse:collapse">';
 
-            foreach ($formatted_data as $row) {
-                $line = [
-                    $sanitize($row['id_task'], '-'),
-                    $sanitize($row['konsumen'], '-'),
-                    $sanitize($row['lokasi'], '-'),
-                    $sanitize($row['blok'], '-'),
-                    $sanitize($row['divisi'], '-'),
-                    $sanitize($row['jenis'], '-'),
-                    $sanitize($row['due_date'], '-'),
-                    $sanitize($row['done_date'], '-'),
-                    $sanitize($row['waktu_status'], '-'),
-                ];
-                $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
+            // Header row
+            $excel_content .= '<thead><tr>';
+            foreach ($headers as $h) {
+                $excel_content .= '<th style="background:#2563EB;color:#fff;font-weight:bold;padding:6px 10px;white-space:nowrap">' . $esc($h) . '</th>';
             }
+            $excel_content .= '</tr></thead><tbody>';
+
+            // Data rows
+            foreach ($formatted_data as $row) {
+                $status = $sanitize($row['waktu_status'], '-');
+                $bg = $status === 'On Time' ? '#D1FAE5' : ($status === 'Late' ? '#FEE2E2' : '#F3F4F6');
+                $excel_content .= '<tr>';
+                $excel_content .= '<td style="padding:5px 8px;font-family:Courier New">' . $esc($sanitize($row['id_task'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['konsumen'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['lokasi'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['blok'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['divisi'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['jenis'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['due_date'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['done_date'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px;background:' . $bg . ';font-weight:bold;text-align:center">' . $esc($status) . '</td>';
+                $excel_content .= '</tr>';
+            }
+
+            $excel_content .= '</tbody></table></body></html>';
 
             // Generate filename dengan timestamp
             $timestamp = date('Y-m-d_H-i-s');
-            $ketepatan_label = $ketepatan === 'ontime' ? 'on-time' : ($ketepatan === 'late' ? 'late' : 'semua');
-            $filename = "export_ketepatan_{$ketepatan_label}_{$timestamp}.csv";
+            $ketepatan_file = $ketepatan === 'ontime' ? 'on-time' : ($ketepatan === 'late' ? 'late' : 'semua');
+            $filename = "export_ketepatan_{$ketepatan_file}_{$timestamp}.xls";
 
-            // Output CSV file
-            header('Content-Type: text/csv; charset=utf-8');
+            // Output Excel file
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             header('Pragma: no-cache');
             header('Expires: 0');
             header('Cache-Control: no-store, no-cache, must-revalidate');
 
-            echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
-            echo $csv_content;
+            echo $excel_content;
             exit;
 
         } catch (Exception $e) {

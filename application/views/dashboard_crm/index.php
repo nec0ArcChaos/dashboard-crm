@@ -279,21 +279,36 @@
 
     <div class="row g-3 mb-3">
       <div class="col-6 col-md">
-        <div class="kpi-card green">
-          <div class="kpi-label">On Time Tertinggi</div>
-          <div class="kpi-value text-success"><?= $max_ontime_pct ?>%</div>
-          <div class="kpi-meta"><?= htmlspecialchars($max_divisi) ?></div>
+        <div class="kpi-card" style="cursor: pointer;" onclick="openModal('ketepatan_total')">
+          <div class="kpi-label">Total Komplain</div>
+          <div class="kpi-value"><?= number_format($total_ketepatan, 0, ',', '.') ?></div>
+          <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
+        </div>
+      </div>
+      <?php
+        $pct_ontime = $total_ketepatan > 0 ? round(($total_ontime / $total_ketepatan) * 100) : 0;
+        $pct_late   = $total_ketepatan > 0 ? round(($total_late   / $total_ketepatan) * 100) : 0;
+      ?>
+      <div class="col-6 col-md">
+        <div class="kpi-card green" style="cursor:pointer" onclick="openKetepatanGlobal('ontime')">
+          <div class="kpi-label">Total On Time</div>
+          <div class="kpi-value text-success" style="font-size:1.4rem">
+            <?= number_format($total_ontime, 0, ',', '.') ?>
+            <span style="color:#CBD5E1;font-weight:300;margin:0 4px">|</span>
+            <?= $pct_ontime ?>%
+          </div>
+          <div class="kpi-meta"><span style="font-size:11px">Klik untuk detail →</span></div>
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="kpi-card <?= $min_ontime_pct < 80 ? 'red' : 'green' ?>">
-          <div class="kpi-label">On Time Terendah</div>
-          <div class="kpi-value <?= $min_ontime_pct < 80 ? 'text-danger' : 'text-success' ?>"><?= $min_ontime_pct ?>%</div>
-          <div class="kpi-meta">
-            <span class="pill <?= $min_ontime_pct < 80 ? 'pill-red' : 'pill-green' ?>">
-              <?= $min_ontime_pct < 80 ? '🚨' : '✓' ?> <?= htmlspecialchars($min_divisi) ?>
-            </span>
+        <div class="kpi-card <?= $total_late > 0 ? 'red' : 'green' ?>" style="cursor:pointer" onclick="openKetepatanGlobal('late')">
+          <div class="kpi-label">Total Late</div>
+          <div class="kpi-value <?= $total_late > 0 ? 'text-danger' : 'text-success' ?>" style="font-size:1.4rem">
+            <?= number_format($total_late, 0, ',', '.') ?>
+            <span style="color:#CBD5E1;font-weight:300;margin:0 4px">|</span>
+            <?= $pct_late ?>%
           </div>
+          <div class="kpi-meta"><span style="font-size:11px">Klik untuk detail →</span></div>
         </div>
       </div>
       <div class="col-6 col-md">
@@ -308,13 +323,6 @@
           <div class="kpi-label">Divisi ≥ 80%</div>
           <div class="kpi-value text-success"><?= $divisi_atas_80 ?></div>
           <div class="kpi-meta">Performansi baik</div>
-        </div>
-      </div>
-      <div class="col-6 col-md">
-        <div class="kpi-card" style="cursor: pointer;" onclick="openModal('ketepatan_total')">
-          <div class="kpi-label">Total Komplain</div>
-          <div class="kpi-value"><?= number_format($total_ketepatan, 0, ',', '.') ?></div>
-          <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
         </div>
       </div>
     </div>
