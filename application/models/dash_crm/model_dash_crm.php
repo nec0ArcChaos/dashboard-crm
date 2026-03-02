@@ -397,28 +397,88 @@ class Model_dash_crm extends CI_Model {
     // ============================================================
 
     /**
-     * Rata-rata rating konsumen dari cm_rating
+     * Rata-rata rating konsumen dari cm_rating, dengan filter bar
      */
-    public function get_rating_summary() {
-        $this->db->select('AVG(avg_rating) as avg_all, COUNT(*) as total_responden,
-            AVG(pelayanan) as avg_pelayanan,
-            AVG(kualitas) as avg_kualitas,
-            AVG(respons) as avg_respons');
-        $this->db->from('cm_rating');
+    public function get_rating_summary($filter = []) {
+        $this->db->select('AVG(r.avg_rating) as avg_all, COUNT(*) as total_responden,
+            AVG(r.pelayanan) as avg_pelayanan,
+            AVG(r.kualitas) as avg_kualitas,
+            AVG(r.respons) as avg_respons');
+        $this->db->from('cm_rating r');
+        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->_apply_rating_filters($filter);
         $row = $this->db->get()->row_array();
         return $row;
     }
 
     /**
-     * Distribusi rating (bintang 1-5)
+     * Distribusi rating (bintang 1-5), dengan filter bar
      */
-    public function get_distribusi_rating() {
-        $this->db->select('ROUND(avg_rating) as bintang, COUNT(*) as total');
-        $this->db->from('cm_rating');
-        $this->db->where('avg_rating IS NOT NULL', null, false);
-        $this->db->group_by('ROUND(avg_rating)');
+    public function get_distribusi_rating($filter = []) {
+        $this->db->select('ROUND(r.avg_rating) as bintang, COUNT(*) as total');
+        $this->db->from('cm_rating r');
+        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->where('r.avg_rating IS NOT NULL', null, false);
+        $this->_apply_rating_filters($filter);
+        $this->db->group_by('ROUND(r.avg_rating)');
         $this->db->order_by('bintang', 'ASC');
         return $this->db->get()->result_array();
+    }
+
+    /**
+     * Helper filter khusus untuk tabel cm_rating (sudah di-join cm_task + cm_category)
+     */
+    private function _apply_rating_filters($filter = []) {
+        if (!empty($filter['date_from'])) {
+            $this->db->where('r.created_at >=', $filter['date_from'] . ' 00:00:00');
+        }
+        if (!empty($filter['date_to'])) {
+            $this->db->where('r.created_at <=', $filter['date_to'] . ' 23:59:59');
+        }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
+    }
+
+    /**
+     * Drilldown detail rating — join cm_rating + cm_task + cm_category
+     * $bintang: null = semua, 1-5 = filter per bintang (ROUND(avg_rating))
+     */
+    public function get_rating_drilldown($bintang = null, $filter = [], $limit = 10, $offset = 0) {
+        $this->db->select('r.id_task, t.konsumen, t.project, t.blok,
+            c.category as jenis, c.divisi,
+            r.pelayanan, r.kualitas, r.respons, r.feedback, r.avg_rating, r.created_at');
+        $this->db->from('cm_rating r');
+        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        if ($bintang !== null && $bintang !== '' && $bintang !== 'null') {
+            $this->db->where('ROUND(r.avg_rating)', (int)$bintang);
+        }
+        $this->_apply_rating_filters($filter);
+        $this->db->order_by('r.created_at', 'DESC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    /**
+     * Count untuk drilldown rating
+     */
+    public function count_rating_drilldown($bintang = null, $filter = []) {
+        $this->db->from('cm_rating r');
+        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
+        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        if ($bintang !== null && $bintang !== '' && $bintang !== 'null') {
+            $this->db->where('ROUND(r.avg_rating)', (int)$bintang);
+        }
+        $this->_apply_rating_filters($filter);
+        return $this->db->count_all_results();
     }
 
     // ============================================================
