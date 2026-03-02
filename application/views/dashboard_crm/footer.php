@@ -16,14 +16,10 @@
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
               <input type="date" id="kgDueDateFrom" class="form-control form-control-sm" style="width:140px">
-              <small class="text-muted">s.d.</small>
-              <input type="date" id="kgDueDateTo" class="form-control form-control-sm" style="width:140px">
             </div>
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
               <input type="date" id="kgDoneDateFrom" class="form-control form-control-sm" style="width:140px">
-              <small class="text-muted">s.d.</small>
-              <input type="date" id="kgDoneDateTo" class="form-control form-control-sm" style="width:140px">
             </div>
             <button class="btn btn-sm btn-primary" onclick="applyKetepatanDateFilter()">Terapkan</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="resetKetepatanDateFilter()">Reset</button>
@@ -861,9 +857,7 @@ function openKetepatanGlobal(initialFilter = 'all') {
   // Reset date filters
   _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
   document.getElementById('kgDueDateFrom').value  = '';
-  document.getElementById('kgDueDateTo').value    = '';
   document.getElementById('kgDoneDateFrom').value = '';
-  document.getElementById('kgDoneDateTo').value   = '';
 
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
@@ -950,9 +944,9 @@ function loadKetepatanGlobalPage(page) {
 
 function applyKetepatanDateFilter() {
   _kgDueDateFrom  = document.getElementById('kgDueDateFrom').value;
-  _kgDueDateTo    = document.getElementById('kgDueDateTo').value;
+  _kgDueDateTo    = _kgDueDateFrom; // filter exact date (same from & to)
   _kgDoneDateFrom = document.getElementById('kgDoneDateFrom').value;
-  _kgDoneDateTo   = document.getElementById('kgDoneDateTo').value;
+  _kgDoneDateTo   = _kgDoneDateFrom; // filter exact date (same from & to)
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
@@ -962,9 +956,7 @@ function applyKetepatanDateFilter() {
 function resetKetepatanDateFilter() {
   _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
   document.getElementById('kgDueDateFrom').value  = '';
-  document.getElementById('kgDueDateTo').value    = '';
   document.getElementById('kgDoneDateFrom').value = '';
-  document.getElementById('kgDoneDateTo').value   = '';
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
