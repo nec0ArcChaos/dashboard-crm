@@ -317,6 +317,7 @@ class Model_dash_crm extends CI_Model {
             WHERE t.status = 6
               AND t.done_date IS NOT NULL
               AND c.divisi IS NOT NULL
+              AND c.divisi != 'Other'
         ";
 
         $params = [];
@@ -354,10 +355,10 @@ class Model_dash_crm extends CI_Model {
         }
 
         // 4. Daftar divisi yang direkam dalam database (sesuai dengan requirement)
-        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate, Rumah dan Bangunan, Other
+        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate, Rumah dan Bangunan
         $valid_divisi = [
             'Project',
-            'MEP', 
+            'MEP',
             'Finance',
             'Buspro',
             'Legal',
@@ -365,7 +366,6 @@ class Model_dash_crm extends CI_Model {
             'CRM',
             'Estate',
             'Rumah dan Bangunan',
-            'Other',
         ];
 
         // 5. Susun result dengan SEMUA divisi yang valid, bahkan yang tidak memiliki data
@@ -916,12 +916,14 @@ class Model_dash_crm extends CI_Model {
         $this->db->from('cm_task t');
         $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
 
-        // Hanya task dengan status = 6 (Done) yang memiliki due_date
+        // Hanya task dengan status = 6 (Done) yang memiliki due_date, exclude divisi "Other"
         $this->db->where('t.status', 6);
         $this->db->where('t.due_date IS NOT NULL', null, false);
         $this->db->where('t.due_date !=', '0000-00-00');
         $this->db->where('t.done_date IS NOT NULL', null, false);
         $this->db->where('t.done_date !=', '0000-00-00 00:00:00');
+        $this->db->where('c.divisi !=', 'Other');
+        $this->db->where('c.divisi IS NOT NULL', null, false);
 
         // Apply global filters
         if (!empty($filter['date_from'])) {
