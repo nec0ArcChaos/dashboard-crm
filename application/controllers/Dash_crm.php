@@ -90,6 +90,8 @@ class Dash_crm extends CI_Controller {
         $max_divisi = '';
         $min_divisi = '';
         $total_ketepatan = 0;
+        $total_ontime    = 0;
+        $total_late      = 0;
         $divisi_bawah_80 = 0;
         $divisi_atas_80  = 0;
 
@@ -103,6 +105,8 @@ class Dash_crm extends CI_Controller {
                 'pct'    => $pct,
             ];
             $total_ketepatan += $row['total'];
+            $total_ontime    += (int)$row['ontime'];
+            $total_late      += (int)$row['late'];
 
             // Hanya hitung statistik untuk divisi yang memiliki data (total > 0)
             if ($row['total'] > 0) {
@@ -195,6 +199,8 @@ class Dash_crm extends CI_Controller {
             'min_ontime_pct'      => $min_ontime_pct,
             'min_divisi'          => $min_divisi,
             'total_ketepatan'     => $total_ketepatan,
+            'total_ontime'        => $total_ontime,
+            'total_late'          => $total_late,
             'divisi_bawah_80'     => $divisi_bawah_80,
             'divisi_atas_80'      => $divisi_atas_80,
 
@@ -335,11 +341,15 @@ class Dash_crm extends CI_Controller {
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
 
-        $page       = (int)$this->input->get('page') ?: 1;
-        $per_page   = (int)$this->input->get('per_page') ?: 20;
-        $ketepatan  = $this->input->get('ketepatan') ?: 'all';
-        $export     = $this->input->get('export');
-        $filter     = $this->_get_filter();
+        $page           = (int)$this->input->get('page') ?: 1;
+        $per_page       = (int)$this->input->get('per_page') ?: 20;
+        $ketepatan      = $this->input->get('ketepatan') ?: 'all';
+        $export         = $this->input->get('export');
+        $filter         = $this->_get_filter();
+        $due_date_from  = $this->input->get('due_date_from')  ?: '';
+        $due_date_to    = $this->input->get('due_date_to')    ?: '';
+        $done_date_from = $this->input->get('done_date_from') ?: '';
+        $done_date_to   = $this->input->get('done_date_to')   ?: '';
 
         // Ambil SEMUA data ketepatan global (tanpa limit/offset di database)
         $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
@@ -360,11 +370,27 @@ class Dash_crm extends CI_Controller {
             }
 
             // Filter berdasarkan ketepatan yang dipilih
-            if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
-                continue;
+            if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') { continue; }
+            if ($ketepatan === 'late'   && $waktu_status !== 'Late')    { continue; }
+
+            // Filter berdasarkan due_date range
+            if ($due_date_from !== '') {
+                if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                if (strtotime($row['due_date']) < strtotime($due_date_from)) { continue; }
             }
-            if ($ketepatan === 'late' && $waktu_status !== 'Late') {
-                continue;
+            if ($due_date_to !== '') {
+                if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                if (strtotime($row['due_date']) > strtotime($due_date_to)) { continue; }
+            }
+
+            // Filter berdasarkan done_date range
+            if ($done_date_from !== '') {
+                if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                if (strtotime($row['done_date']) < strtotime($done_date_from)) { continue; }
+            }
+            if ($done_date_to !== '') {
+                if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                if (strtotime($row['done_date']) > strtotime($done_date_to . ' 23:59:59')) { continue; }
             }
 
             $formatted_data[] = [
@@ -403,8 +429,12 @@ class Dash_crm extends CI_Controller {
     // ============================================================
     public function export_ketepatan_data() {
         try {
-            $ketepatan = $this->input->get('ketepatan') ?: 'all';
-            $filter    = $this->_get_filter();
+            $ketepatan      = $this->input->get('ketepatan')      ?: 'all';
+            $filter         = $this->_get_filter();
+            $due_date_from  = $this->input->get('due_date_from')  ?: '';
+            $due_date_to    = $this->input->get('due_date_to')    ?: '';
+            $done_date_from = $this->input->get('done_date_from') ?: '';
+            $done_date_to   = $this->input->get('done_date_to')   ?: '';
 
             // Ambil SEMUA data ketepatan global
             $all_rows = $this->dashboard_m->get_ketepatan_global_detail($filter);
@@ -425,11 +455,27 @@ class Dash_crm extends CI_Controller {
                 }
 
                 // Filter berdasarkan ketepatan yang dipilih
-                if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') {
-                    continue;
+                if ($ketepatan === 'ontime' && $waktu_status !== 'On Time') { continue; }
+                if ($ketepatan === 'late'   && $waktu_status !== 'Late')    { continue; }
+
+                // Filter berdasarkan due_date range
+                if ($due_date_from !== '') {
+                    if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                    if (strtotime($row['due_date']) < strtotime($due_date_from)) { continue; }
                 }
-                if ($ketepatan === 'late' && $waktu_status !== 'Late') {
-                    continue;
+                if ($due_date_to !== '') {
+                    if (!$row['due_date'] || $row['due_date'] === '0000-00-00') { continue; }
+                    if (strtotime($row['due_date']) > strtotime($due_date_to)) { continue; }
+                }
+
+                // Filter berdasarkan done_date range
+                if ($done_date_from !== '') {
+                    if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                    if (strtotime($row['done_date']) < strtotime($done_date_from)) { continue; }
+                }
+                if ($done_date_to !== '') {
+                    if (!$row['done_date'] || $row['done_date'] === '0000-00-00 00:00:00') { continue; }
+                    if (strtotime($row['done_date']) > strtotime($done_date_to . ' 23:59:59')) { continue; }
                 }
 
                 $formatted_data[] = [

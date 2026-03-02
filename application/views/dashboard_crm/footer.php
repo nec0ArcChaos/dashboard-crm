@@ -10,6 +10,25 @@
       </div>
       <div class="modal-body" id="ketepatanGlobalBody">
         <div id="ketepatanGlobalLoading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data...</p></div>
+        <div id="ketepatanGlobalFilters" style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #E4E8F0">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
+              <input type="date" id="kgDueDateFrom" class="form-control form-control-sm" style="width:140px">
+              <small class="text-muted">s.d.</small>
+              <input type="date" id="kgDueDateTo" class="form-control form-control-sm" style="width:140px">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
+              <input type="date" id="kgDoneDateFrom" class="form-control form-control-sm" style="width:140px">
+              <small class="text-muted">s.d.</small>
+              <input type="date" id="kgDoneDateTo" class="form-control form-control-sm" style="width:140px">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="applyKetepatanDateFilter()">Terapkan</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetKetepatanDateFilter()">Reset</button>
+          </div>
+        </div>
         <div id="ketepatanGlobalContent"></div>
         <div id="ketepatanGlobalPagination" class="mt-3"></div>
       </div>
@@ -832,13 +851,28 @@ function renderDrilldownPagination(total, per_page, current_page) {
 // GLOBAL KETEPATAN WAKTU MODAL — Detail semua divisi
 // ============================================================
 let _ketepatanGlobalFilter = 'all'; // all, ontime, late
+let _kgDueDateFrom  = '';
+let _kgDueDateTo    = '';
+let _kgDoneDateFrom = '';
+let _kgDoneDateTo   = '';
 
-function openKetepatanGlobal() {
-  _ketepatanGlobalFilter = 'all'; // Reset filter
+function openKetepatanGlobal(initialFilter = 'all') {
+  _ketepatanGlobalFilter = initialFilter; // Set filter awal (all, ontime, late)
+  // Reset date filters
+  _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
+  document.getElementById('kgDueDateFrom').value  = '';
+  document.getElementById('kgDueDateTo').value    = '';
+  document.getElementById('kgDoneDateFrom').value = '';
+  document.getElementById('kgDoneDateTo').value   = '';
+
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
-  
+
+  // Update judul modal sesuai filter
+  const titleMap = { all: 'Ketepatan Waktu Pengerjaan — Detail Semua Divisi', ontime: 'Ketepatan Waktu — Data On Time', late: 'Ketepatan Waktu — Data Late / Terlambat' };
+  document.querySelector('#ketepatanGlobalModal .modal-title').textContent = titleMap[initialFilter] || titleMap['all'];
+
   const ketepatanGlobalModal = new bootstrap.Modal(document.getElementById('ketepatanGlobalModal'));
   ketepatanGlobalModal.show();
   loadKetepatanGlobalPage(1);
@@ -846,13 +880,17 @@ function openKetepatanGlobal() {
 
 function loadKetepatanGlobalPage(page) {
   const params = new URLSearchParams({
-    page:      page,
-    per_page:  20,
-    ketepatan: _ketepatanGlobalFilter, // all, ontime, late
-    date_from: filterGlobal.date_from,
-    date_to:   filterGlobal.date_to,
-    sumber:    filterGlobal.sumber,
-    divisi:    filterGlobal.divisi,
+    page:           page,
+    per_page:       20,
+    ketepatan:      _ketepatanGlobalFilter, // all, ontime, late
+    date_from:      filterGlobal.date_from,
+    date_to:        filterGlobal.date_to,
+    sumber:         filterGlobal.sumber,
+    divisi:         filterGlobal.divisi,
+    due_date_from:  _kgDueDateFrom,
+    due_date_to:    _kgDueDateTo,
+    done_date_from: _kgDoneDateFrom,
+    done_date_to:   _kgDoneDateTo,
   });
 
   const fetchUrl = BASE_URL + 'dash_crm/ketepatan_global?' + params.toString();
@@ -877,17 +915,8 @@ function loadKetepatanGlobalPage(page) {
         return;
       }
 
-      // Render filter buttons
-      let filterButtonsHtml = `
-        <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
-          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('all')">Semua Data</button>
-          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'ontime' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('ontime')">On Time</button>
-          <button class="btn btn-sm ${_ketepatanGlobalFilter === 'late' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setKetepatanGlobalFilter('late')">Late</button>
-        </div>
-      `;
-
       // Render tabel
-      let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
@@ -919,9 +948,27 @@ function loadKetepatanGlobalPage(page) {
     });
 }
 
-function setKetepatanGlobalFilter(filterValue) {
-  _ketepatanGlobalFilter = filterValue;
-  loadKetepatanGlobalPage(1); // Reload halaman 1 dengan filter baru
+function applyKetepatanDateFilter() {
+  _kgDueDateFrom  = document.getElementById('kgDueDateFrom').value;
+  _kgDueDateTo    = document.getElementById('kgDueDateTo').value;
+  _kgDoneDateFrom = document.getElementById('kgDoneDateFrom').value;
+  _kgDoneDateTo   = document.getElementById('kgDoneDateTo').value;
+  document.getElementById('ketepatanGlobalContent').innerHTML = '';
+  document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+  document.getElementById('ketepatanGlobalLoading').style.display = 'block';
+  loadKetepatanGlobalPage(1);
+}
+
+function resetKetepatanDateFilter() {
+  _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
+  document.getElementById('kgDueDateFrom').value  = '';
+  document.getElementById('kgDueDateTo').value    = '';
+  document.getElementById('kgDoneDateFrom').value = '';
+  document.getElementById('kgDoneDateTo').value   = '';
+  document.getElementById('ketepatanGlobalContent').innerHTML = '';
+  document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+  document.getElementById('ketepatanGlobalLoading').style.display = 'block';
+  loadKetepatanGlobalPage(1);
 }
 
 function renderKetepatanGlobalPagination(total, per_page, current_page) {
@@ -952,11 +999,15 @@ function renderKetepatanGlobalPagination(total, per_page, current_page) {
 if (document.getElementById('btnKetepatanExport')) {
   document.getElementById('btnKetepatanExport').addEventListener('click', () => {
     const params = new URLSearchParams({
-      ketepatan: _ketepatanGlobalFilter,
-      date_from: filterGlobal.date_from,
-      date_to:   filterGlobal.date_to,
-      sumber:    filterGlobal.sumber,
-      divisi:    filterGlobal.divisi,
+      ketepatan:      _ketepatanGlobalFilter,
+      date_from:      filterGlobal.date_from,
+      date_to:        filterGlobal.date_to,
+      sumber:         filterGlobal.sumber,
+      divisi:         filterGlobal.divisi,
+      due_date_from:  _kgDueDateFrom,
+      due_date_to:    _kgDueDateTo,
+      done_date_from: _kgDoneDateFrom,
+      done_date_to:   _kgDoneDateTo,
     });
     window.location.href = BASE_URL + 'dash_crm/export_ketepatan_data?' + params.toString();
   });
