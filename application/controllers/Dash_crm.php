@@ -63,23 +63,12 @@ class Dash_crm extends CI_Controller {
             : 0;
 
         $trend_eskalasi_raw = $this->dashboard_m->get_trend_eskalasi($filter);
-
-        // Indeks hasil DB: ['YYYY-MM' => total]
-        $db_trend = [];
-        foreach ($trend_eskalasi_raw as $row) {
-            $db_trend[$row['bulan']] = (int)$row['total'];
-        }
-
-        // Bangun skeleton bulan lengkap dari date_from s.d date_to (isi 0 untuk bulan tanpa data)
         $trend_labels = [];
         $trend_data   = [];
-        $cur = strtotime(date('Y-m-01', strtotime($filter['date_from'])));
-        $end = strtotime(date('Y-m-01', strtotime($filter['date_to'])));
-        while ($cur <= $end) {
-            $key            = date('Y-m', $cur);
-            $trend_labels[] = date('M', $cur)."'".(date('y', $cur));
-            $trend_data[]   = isset($db_trend[$key]) ? $db_trend[$key] : 0;
-            $cur            = strtotime('+1 month', $cur);
+        foreach ($trend_eskalasi_raw as $row) {
+            $ts = strtotime($row['bulan'] . '-01');
+            $trend_labels[] = date('M', $ts)."'".date('y', $ts); // e.g. Jan'25
+            $trend_data[]   = (int)$row['total'];
         }
 
         // KETEPATAN WAKTU
@@ -117,8 +106,8 @@ class Dash_crm extends CI_Controller {
         }
 
         // RATING
-        $rating_summary    = $this->dashboard_m->get_rating_summary();
-        $distribusi_rating = $this->dashboard_m->get_distribusi_rating();
+        $rating_summary    = $this->dashboard_m->get_rating_summary($filter);
+        $distribusi_rating = $this->dashboard_m->get_distribusi_rating($filter);
 
         // STATUS
         $status_raw = $this->dashboard_m->get_status_komplain($filter);
@@ -624,6 +613,64 @@ class Dash_crm extends CI_Controller {
                     'total'   => $total,
                     'page'    => $page,
                     'per_page'=> $per_page,
+                ]));
+        } catch (Exception $e) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ]));
+        }
+    }
+
+    // ============================================================
+    // AJAX — Drilldown Rating Konsumen
+    // ============================================================
+    public function rating_drilldown() {
+        try {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+
+            $bintang  = $this->input->get('bintang'); // null or 1-5
+            $page     = (int)$this->input->get('page') ?: 1;
+            $per_page = 10;
+            $offset   = ($page - 1) * $per_page;
+            $filter   = $this->_get_filter();
+
+            // Normalize 'null' string from JS
+            if ($bintang === 'null' || $bintang === '') $bintang = null;
+
+            $rows  = $this->dashboard_m->get_rating_drilldown($bintang, $filter, $per_page, $offset);
+            $total = $this->dashboard_m->count_rating_drilldown($bintang, $filter);
+
+            $data = [];
+            foreach ($rows as $row) {
+                $lokasi = trim(($row['project'] ?? '') . ' ' . ($row['blok'] ?? ''));
+                $data[] = [
+                    'id_task'    => $row['id_task'],
+                    'konsumen'   => $row['konsumen'] ?: '-',
+                    'lokasi'     => $lokasi ?: '-',
+                    'jenis'      => $row['jenis'] ?: '-',
+                    'divisi'     => $row['divisi'] ?: '-',
+                    'pelayanan'  => $row['pelayanan'],
+                    'kualitas'   => $row['kualitas'],
+                    'respons'    => $row['respons'],
+                    'feedback'   => $row['feedback'] ?: '-',
+                    'avg_rating' => $row['avg_rating'],
+                    'created_at' => $row['created_at'] ? date('d-m-Y', strtotime($row['created_at'])) : '-',
+                ];
+            }
+
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success'  => true,
+                    'data'     => $data,
+                    'total'    => $total,
+                    'page'     => $page,
+                    'per_page' => $per_page,
+                    'bintang'  => $bintang,
                 ]));
         } catch (Exception $e) {
             $this->output

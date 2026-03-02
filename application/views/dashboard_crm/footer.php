@@ -108,6 +108,36 @@
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- MODAL DRILLDOWN RATING KONSUMEN                             -->
+<!-- ============================================================ -->
+<div class="modal fade" id="ratingDrilldownModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold" id="ratingDrilldownTitle">Detail Rating Konsumen</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="ratingDrilldownBody">
+        <!-- Filter bintang — tampil di bagian atas modal -->
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-3 pb-2 border-bottom" id="ratingStarFilterWrap">
+          <span style="font-size:11px;color:#96A3B7;font-weight:600;white-space:nowrap">Filter Bintang:</span>
+          <div id="ratingStarFilter" class="d-flex gap-1 flex-wrap"></div>
+        </div>
+        <div id="ratingDrilldownLoading" class="text-center py-4">
+          <div class="spinner-border text-warning" role="status"></div>
+          <p class="mt-2 text-muted small">Memuat data rating...</p>
+        </div>
+        <div id="ratingDrilldownContent"></div>
+        <div id="ratingDrilldownPagination" class="mt-3"></div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /container-fluid -->
 
 <script>
@@ -1004,6 +1034,131 @@ if (document.getElementById('btnKetepatanExport')) {
     });
     window.location.href = BASE_URL + 'dash_crm/export_ketepatan_data?' + params.toString();
   });
+}
+
+// ============================================================
+// DRILLDOWN RATING KONSUMEN
+// ============================================================
+const bsRatingModal = new bootstrap.Modal(document.getElementById('ratingDrilldownModal'));
+let _ratingBintangFilter = null; // null = semua, 1-5 = per bintang
+
+function _renderRatingStarFilter() {
+  let filterHtml = `<button class="btn btn-xs ${_ratingBintangFilter===null?'btn-warning':'btn-outline-secondary'}" style="font-size:11px;padding:2px 8px;border-radius:100px" onclick="openRatingDrilldown(null)">Semua ⭐</button>`;
+  [5,4,3,2,1].forEach(b => {
+    filterHtml += `<button class="btn btn-xs ${_ratingBintangFilter===b?'btn-warning':'btn-outline-secondary'}" style="font-size:11px;padding:2px 8px;border-radius:100px" onclick="openRatingDrilldown(${b})">${b} ⭐</button>`;
+  });
+  document.getElementById('ratingStarFilter').innerHTML = filterHtml;
+}
+
+function openRatingDrilldown(bintang) {
+  _ratingBintangFilter = (bintang === null || bintang === undefined) ? null : parseInt(bintang);
+  document.getElementById('ratingDrilldownContent').innerHTML = '';
+  document.getElementById('ratingDrilldownPagination').innerHTML = '';
+  document.getElementById('ratingDrilldownLoading').style.display = 'block';
+
+  const label = _ratingBintangFilter !== null
+    ? `Detail Rating Konsumen — ${_ratingBintangFilter} ⭐`
+    : 'Detail Rating Konsumen — Semua';
+  document.getElementById('ratingDrilldownTitle').textContent = label;
+
+  // Render filter langsung di atas sebelum data dimuat
+  _renderRatingStarFilter();
+
+  bsRatingModal.show();
+  loadRatingDrilldownPage(1);
+}
+
+function loadRatingDrilldownPage(page) {
+  const params = new URLSearchParams({
+    page:      page,
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi:    filterGlobal.divisi,
+  });
+  if (_ratingBintangFilter !== null) params.set('bintang', _ratingBintangFilter);
+
+  fetch(BASE_URL + 'dash_crm/rating_drilldown?' + params.toString())
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(res => {
+      document.getElementById('ratingDrilldownLoading').style.display = 'none';
+
+      if (!res.success) {
+        document.getElementById('ratingDrilldownContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
+        return;
+      }
+
+      // Update filter pills (active state) setelah data dimuat
+      _renderRatingStarFilter();
+
+      if (res.data.length === 0) {
+        document.getElementById('ratingDrilldownContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data rating.</p>';
+        renderRatingDrilldownPagination(0, res.per_page, 1);
+        return;
+      }
+
+      const from = ((page-1)*res.per_page)+1;
+      const to   = Math.min(page*res.per_page, res.total);
+      let html = `<p class="text-muted small mb-2">Menampilkan ${from}–${to} dari ${res.total.toLocaleString('id')} data.</p>
+        <div class="table-responsive">
+        <table class="table table-sm modal-table align-middle">
+          <thead><tr style="white-space:nowrap">
+            <th>No. Komplain</th>
+            <th>Konsumen</th>
+            <th>Lokasi</th>
+            <th>Jenis</th>
+            <th style="text-align:center">⭐ Avg</th>
+            <th style="text-align:center">Pelayanan</th>
+            <th style="text-align:center">Kualitas</th>
+            <th style="text-align:center">Respons</th>
+            <th>Feedback</th>
+          </tr></thead><tbody>`;
+
+      function starBadge(val) {
+        if (val === null || val === undefined || val === '') return '<span class="text-muted">—</span>';
+        const n = parseFloat(val);
+        const color = n >= 4 ? '#0E9F6E' : n >= 3 ? '#D97706' : '#E02424';
+        return `<span style="font-weight:700;color:${color};font-family:monospace">${n.toFixed(1)} ⭐</span>`;
+      }
+
+      res.data.forEach(row => {
+        const feedbackEscaped = (row.feedback || '-').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        html += `<tr>
+          <td style="white-space:nowrap"><code style="font-size:11px">${row.id_task}</code></td>
+          <td style="min-width:140px"><small>${row.konsumen}</small></td>
+          <td style="min-width:160px"><small>${row.lokasi}</small></td>
+          <td style="min-width:120px"><small>${row.jenis}</small></td>
+          <td style="text-align:center;white-space:nowrap">${starBadge(row.avg_rating)}</td>
+          <td style="text-align:center;white-space:nowrap">${starBadge(row.pelayanan)}</td>
+          <td style="text-align:center;white-space:nowrap">${starBadge(row.kualitas)}</td>
+          <td style="text-align:center;white-space:nowrap">${starBadge(row.respons)}</td>
+          <td style="min-width:260px;max-width:420px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${feedbackEscaped}</td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('ratingDrilldownContent').innerHTML = html;
+      renderRatingDrilldownPagination(res.total, res.per_page, page);
+    })
+    .catch(err => {
+      document.getElementById('ratingDrilldownLoading').style.display = 'none';
+      document.getElementById('ratingDrilldownContent').innerHTML = `<p class="text-danger">Koneksi error: ${err.message}</p>`;
+    });
+}
+
+function renderRatingDrilldownPagination(total, per_page, current_page) {
+  const total_pages = Math.ceil(total / per_page);
+  if (total_pages <= 1) { document.getElementById('ratingDrilldownPagination').innerHTML = ''; return; }
+  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
+  if (current_page > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${current_page-1});return false;">‹</a></li>`;
+  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
+  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
+  for (let p = start; p <= end; p++) {
+    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${p});return false;">${p}</a></li>`;
+  }
+  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${total_pages});return false;">${total_pages}</a></li>`;
+  if (current_page < total_pages) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${current_page+1});return false;">›</a></li>`;
+  html += '</ul></nav>';
+  document.getElementById('ratingDrilldownPagination').innerHTML = html;
 }
 
 // ============================================================

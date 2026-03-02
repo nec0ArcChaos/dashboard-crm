@@ -356,38 +356,43 @@
     <?php if (!empty($rating_summary['total_responden']) && $rating_summary['total_responden'] > 0): ?>
     <div class="chart-card">
       <div class="row g-3 align-items-center">
-        <div class="col-12 col-md-4 text-center">
+        <div class="col-12 col-md-4 text-center" style="cursor:pointer" onclick="openRatingDrilldown(null)" title="Lihat semua data rating">
           <div style="font-size:48px">⭐</div>
-          <div class="fs-1 fw-bold text-warning"><?= number_format($rating_summary['avg_all'], 1) ?></div>
+          <div class="fs-1 fw-bold text-warning"><?= number_format($rating_summary['avg_all'] ?? 0, 1) ?></div>
           <div class="text-muted small">Rata-rata dari <?= number_format($rating_summary['total_responden'], 0, ',', '.') ?> responden</div>
           <div class="d-flex justify-content-center gap-1 mt-2">
             <?php for ($i=1; $i<=5; $i++): ?>
-            <i class="bi bi-star<?= $i <= round($rating_summary['avg_all']) ? '-fill text-warning' : ' text-muted' ?>"></i>
+            <i class="bi bi-star<?= $i <= round($rating_summary['avg_all'] ?? 0) ? '-fill text-warning' : ' text-muted' ?>"></i>
             <?php endfor; ?>
           </div>
+          <div class="mt-2"><small class="text-primary" style="font-size:11px">Klik untuk drill-down →</small></div>
         </div>
         <div class="col-12 col-md-8">
           <div class="row g-3 mb-3">
             <div class="col-4">
               <div class="bg-light rounded-3 p-3 text-center">
                 <div class="text-muted small fw-bold text-uppercase" style="font-size:10px">Pelayanan</div>
-                <div class="fs-3 fw-bold text-primary"><?= number_format($rating_summary['avg_pelayanan'], 1) ?></div>
+                <div class="fs-3 fw-bold text-primary"><?= number_format($rating_summary['avg_pelayanan'] ?? 0, 1) ?></div>
               </div>
             </div>
             <div class="col-4">
               <div class="bg-light rounded-3 p-3 text-center">
                 <div class="text-muted small fw-bold text-uppercase" style="font-size:10px">Kualitas</div>
-                <div class="fs-3 fw-bold text-success"><?= number_format($rating_summary['avg_kualitas'], 1) ?></div>
+                <div class="fs-3 fw-bold text-success"><?= number_format($rating_summary['avg_kualitas'] ?? 0, 1) ?></div>
               </div>
             </div>
             <div class="col-4">
               <div class="bg-light rounded-3 p-3 text-center">
                 <div class="text-muted small fw-bold text-uppercase" style="font-size:10px">Respons</div>
-                <div class="fs-3 fw-bold text-info"><?= number_format($rating_summary['avg_respons'], 1) ?></div>
+                <div class="fs-3 fw-bold text-info"><?= number_format($rating_summary['avg_respons'] ?? 0, 1) ?></div>
               </div>
             </div>
           </div>
           <div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-muted fw-semibold" style="font-size:11px">DISTRIBUSI RATING</small>
+              <button class="btn btn-xs btn-outline-primary" style="font-size:11px;padding:2px 8px;border-radius:100px" onclick="openRatingDrilldown(null)">Lihat Semua →</button>
+            </div>
             <?php
             $distribusi_map = [];
             foreach ($distribusi_rating as $r) { $distribusi_map[$r['bintang']] = $r['total']; }
@@ -396,12 +401,12 @@
               $cnt = isset($distribusi_map[$i]) ? $distribusi_map[$i] : 0;
               $pct = round(($cnt/$max_rating)*100);
             ?>
-            <div class="d-flex align-items-center gap-2 mb-1">
+            <div class="d-flex align-items-center gap-2 mb-1" style="cursor:pointer" onclick="openRatingDrilldown(<?= $i ?>)" title="Lihat detail rating <?= $i ?> bintang">
               <span style="font-size:12px;width:30px"><?= $i ?>⭐</span>
               <div class="progress flex-grow-1" style="height:8px">
                 <div class="progress-bar bg-warning" style="width:<?= $pct ?>%"></div>
               </div>
-              <span style="font-size:12px;width:30px"><?= $cnt ?></span>
+              <span style="font-size:12px;width:36px;text-align:right"><?= $cnt ?></span>
             </div>
             <?php endfor; ?>
           </div>
