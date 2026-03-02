@@ -905,6 +905,7 @@ class Model_dash_crm extends CI_Model {
             t.id_task,
             t.konsumen,
             t.project,
+            t.blok,
             t.task as jenis,
             t.due_date,
             t.done_date,
