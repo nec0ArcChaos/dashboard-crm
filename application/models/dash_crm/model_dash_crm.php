@@ -490,6 +490,7 @@ class Model_dash_crm extends CI_Model {
             SELECT s.id, s.status, s.color, COUNT(t.id_task) as total
             FROM hris.cm_status s
             LEFT JOIN hris.cm_task t ON t.status = s.id
+            LEFT JOIN hris.cm_category c ON c.id = t.id_category
         ";
 
         $wheres = [];
