@@ -82,6 +82,19 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
+        <?php if ($filter['sumber'] === 'konsumen'): ?>
+        <div class="kpi-card <?= $pct_konsumen_verif >= 80 ? 'green' : 'red' ?>">
+          <div class="kpi-label">% Verifikasi Konsumen</div>
+          <div class="kpi-value <?= $pct_konsumen_verif >= 80 ? 'text-success' : 'text-danger' ?>">
+            <?= $pct_konsumen_verif ?>%
+          </div>
+          <div class="kpi-meta">
+            <span class="pill <?= $pct_konsumen_verif >= 80 ? 'pill-green' : 'pill-red' ?>">
+              <?= $pct_konsumen_verif >= 80 ? '✓ Baik' : '🚨 Di bawah target' ?>
+            </span>
+          </div>
+        </div>
+        <?php else: ?>
         <div class="kpi-card <?= $pct_verif_sosmed >= 80 ? 'green' : 'red' ?>">
           <div class="kpi-label">% Verifikasi Sosmed</div>
           <div class="kpi-value <?= $pct_verif_sosmed >= 80 ? 'text-success' : 'text-danger' ?>">
@@ -93,6 +106,7 @@
             </span>
           </div>
         </div>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -119,6 +133,7 @@
           <div class="chart-title">Ringkasan Verifikasi</div>
           <div class="chart-sub">Per sumber &amp; status</div>
           <div class="mt-2">
+            <?php if ($filter['sumber'] !== 'sosmed'): ?>
             <div class="status-item" onclick="openModal('verif_konsumen')">
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Konsumen — Terverifikasi</div>
@@ -143,6 +158,8 @@
               ?>
               <span class="pill <?= $pill_class ?>" style="font-size:10px"><?= $pct_konsumen_belum ?>%</span>
             </div>
+            <?php endif; ?>
+            <?php if ($filter['sumber'] !== 'konsumen'): ?>
             <div class="status-item" onclick="openModal('verif_sosmed_v')">
               <div class="status-dot-sm" style="background:#1A56DB"></div>
               <div class="status-name">Sosmed — Terverifikasi</div>
@@ -165,6 +182,7 @@
               ?>
               <span class="pill <?= $pill_class_sosmed ?>" style="font-size:10px"><?= $pct_sosmed_belum ?>%</span>
             </div>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -239,6 +257,7 @@
           <div class="chart-title">Ringkasan Eskalasi</div>
           <div class="chart-sub">Per sumber &amp; status</div>
           <div class="mt-2">
+            <?php if ($filter['sumber'] !== 'sosmed'): ?>
             <div class="status-item" onclick="openModal('esk_konsumen_sudah')">
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Konsumen — Sudah Esk.</div>
@@ -251,6 +270,8 @@
               <div class="status-qty"><?= number_format($eskalasi_per_sumber['konsumen']['belum'], 0, ',', '.') ?></div>
               <span class="pill pill-red" style="font-size:10px"><?= ($eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum']) > 0 ? round(($eskalasi_per_sumber['konsumen']['belum']/($eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum']))*100) : 0 ?>%</span>
             </div>
+            <?php endif; ?>
+            <?php if ($filter['sumber'] !== 'konsumen'): ?>
             <div class="status-item" onclick="openModal('esk_sosmed_sudah')">
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Sosmed — Sudah Esk.</div>
@@ -263,6 +284,7 @@
               <div class="status-qty"><?= number_format($eskalasi_per_sumber['sosmed']['belum'], 0, ',', '.') ?></div>
               <span class="pill pill-red" style="font-size:10px"><?= ($eskalasi_per_sumber['sosmed']['sudah'] + $eskalasi_per_sumber['sosmed']['belum']) > 0 ? round(($eskalasi_per_sumber['sosmed']['belum']/($eskalasi_per_sumber['sosmed']['sudah'] + $eskalasi_per_sumber['sosmed']['belum']))*100) : 0 ?>%</span>
             </div>
+            <?php endif; ?>
           </div>
         </div>
       </div>

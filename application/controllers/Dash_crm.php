@@ -28,6 +28,13 @@ class Dash_crm extends CI_Controller {
         $belum_verifikasi = $this->dashboard_m->get_belum_verifikasi($filter);
         $verif_per_sumber = $this->dashboard_m->get_verifikasi_per_sumber($filter);
 
+        // Nolkan data sumber yang tidak dipilih sesuai filter
+        if ($filter['sumber'] === 'konsumen') {
+            $verif_per_sumber['sosmed'] = ['terverifikasi' => 0, 'belum' => 0];
+        } elseif ($filter['sumber'] === 'sosmed') {
+            $verif_per_sumber['konsumen'] = ['terverifikasi' => 0, 'belum' => 0];
+        }
+
         $pct_verif = $total_komplain > 0
             ? round(($terverifikasi / $total_komplain) * 100)
             : 0;
@@ -49,6 +56,13 @@ class Dash_crm extends CI_Controller {
             : 0;
 
         $eskalasi_per_sumber = $this->dashboard_m->get_eskalasi_per_sumber($filter);
+
+        // Nolkan data sumber yang tidak dipilih sesuai filter
+        if ($filter['sumber'] === 'konsumen') {
+            $eskalasi_per_sumber['sosmed'] = ['sudah' => 0, 'belum' => 0];
+        } elseif ($filter['sumber'] === 'sosmed') {
+            $eskalasi_per_sumber['konsumen'] = ['sudah' => 0, 'belum' => 0];
+        }
 
         // Hitung persentase eskalasi per sumber
         $total_konsumen = $eskalasi_per_sumber['konsumen']['sudah'] + $eskalasi_per_sumber['konsumen']['belum'];
@@ -930,7 +944,7 @@ class Dash_crm extends CI_Controller {
         $date_from = $this->input->get('date_from') ?: '2025-01-01';
         $date_to   = $this->input->get('date_to')   ?: date('Y-m-d');
         $sumber    = $this->input->get('sumber')    ?: 'all';
-        $divisi    = $this->input->get('divisi')    ?: 'all';
+        $divisi    = $this->input->get('divisi_filter') ?: $this->input->get('divisi') ?: 'all';
 
         // Validasi format tanggal
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) $date_from = '2025-01-01';

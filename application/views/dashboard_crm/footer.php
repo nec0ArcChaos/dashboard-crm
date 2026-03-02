@@ -176,13 +176,32 @@ const filterGlobal  = {
 // ============================================================
 // SECTION 01 — CHARTS VERIFIKASI
 // ============================================================
+// Build chart data berdasarkan filter sumber
+const verifLabels = [];
+const verifTerverifikasiData = [];
+const verifBelumData = [];
+const verifBarTypes = []; // track sumber per bar index untuk onClick
+
+if (filterGlobal.sumber !== 'sosmed') {
+  verifLabels.push('Dari Konsumen');
+  verifTerverifikasiData.push(verifChart.konsumen_terverifikasi);
+  verifBelumData.push(verifChart.konsumen_belum);
+  verifBarTypes.push('konsumen');
+}
+if (filterGlobal.sumber !== 'konsumen') {
+  verifLabels.push('Dari Sosmed');
+  verifTerverifikasiData.push(verifChart.sosmed_terverifikasi);
+  verifBelumData.push(verifChart.sosmed_belum);
+  verifBarTypes.push('sosmed');
+}
+
 new Chart('chartVerifSumber', {
   type: 'bar',
   data: {
-    labels: ['Dari Konsumen','Dari Sosmed'],
+    labels: verifLabels,
     datasets: [
-      { label:'Terverifikasi', data:[verifChart.konsumen_terverifikasi, verifChart.sosmed_terverifikasi], backgroundColor:'#0E9F6E', borderRadius:6 },
-      { label:'Belum Verif.',  data:[verifChart.konsumen_belum,         verifChart.sosmed_belum],         backgroundColor:'#E02424', borderRadius:6 },
+      { label:'Terverifikasi', data:verifTerverifikasiData, backgroundColor:'#0E9F6E', borderRadius:6 },
+      { label:'Belum Verif.',  data:verifBelumData,         backgroundColor:'#E02424', borderRadius:6 },
     ]
   },
   options:{
@@ -201,7 +220,6 @@ new Chart('chartVerifSumber', {
         onClick:(e, legendItem, chart) => {
           e.native.stopImmediatePropagation();
           const datasetIndex = legendItem.datasetIndex; // 0 = terverifikasi, 1 = belum
-          // Buka modal untuk menampilkan semua data (konsumen + sosmed) berdasarkan status
           if (datasetIndex === 0) {
             openModal('verif_terverifikasi');
           } else {
@@ -213,14 +231,13 @@ new Chart('chartVerifSumber', {
     scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#E4E8F0'}} },
     onClick:(e,els)=>{
       if(els.length) {
-        const barIndex = els[0].index;            // 0 = konsumen, 1 = sosmed
+        const barIndex = els[0].index;
         const datasetIndex = els[0].datasetIndex; // 0 = terverifikasi, 1 = belum
+        const sumberType = verifBarTypes[barIndex];
 
-        if (barIndex === 0) {
-          // Dari Konsumen
+        if (sumberType === 'konsumen') {
           openModal(datasetIndex === 0 ? 'verif_konsumen' : 'verif_konsumen_belum');
         } else {
-          // Dari Sosmed
           openModal(datasetIndex === 0 ? 'verif_sosmed_v' : 'verif_sosmed_b');
         }
       }
