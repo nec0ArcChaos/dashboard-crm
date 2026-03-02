@@ -487,7 +487,15 @@ class Model_dash_crm extends CI_Model {
         // Gunakan raw query agar lebih akurat dengan kondisi kompleks
         $params = [];
         $sql = "
-            SELECT s.id, s.status, s.color, COUNT(t.id_task) as total
+            SELECT s.id, s.status, s.color,
+                COUNT(CASE
+                    WHEN s.id != 6 THEN t.id_task
+                    WHEN s.id = 6
+                         AND t.done_date IS NOT NULL
+                         AND c.divisi IS NOT NULL
+                         AND c.divisi != 'Other' THEN t.id_task
+                    ELSE NULL
+                END) as total
             FROM hris.cm_status s
             LEFT JOIN hris.cm_task t ON t.status = s.id
             LEFT JOIN hris.cm_category c ON c.id = t.id_category
