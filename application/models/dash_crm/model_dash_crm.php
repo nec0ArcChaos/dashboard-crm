@@ -449,9 +449,9 @@ class Model_dash_crm extends CI_Model {
         $this->db->select('r.id_task, t.konsumen, t.project, t.blok,
             c.category as jenis, c.divisi,
             r.pelayanan, r.kualitas, r.respons, r.feedback, r.avg_rating, r.created_at');
-        $this->db->from('cm_rating r');
-        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_rating r');
+        $this->db->join('hris.cm_task t',     't.id_task = r.id_task COLLATE utf8mb4_unicode_ci', 'left', false);
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         if ($bintang !== null && $bintang !== '' && $bintang !== 'null') {
             $this->db->where('ROUND(r.avg_rating)', (int)$bintang);
         }
@@ -465,9 +465,9 @@ class Model_dash_crm extends CI_Model {
      * Count untuk drilldown rating
      */
     public function count_rating_drilldown($bintang = null, $filter = []) {
-        $this->db->from('cm_rating r');
-        $this->db->join('cm_task t',     't.id_task = r.id_task',     'left');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_rating r');
+        $this->db->join('hris.cm_task t',     't.id_task = r.id_task COLLATE utf8mb4_unicode_ci', 'left', false);
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         if ($bintang !== null && $bintang !== '' && $bintang !== 'null') {
             $this->db->where('ROUND(r.avg_rating)', (int)$bintang);
         }
