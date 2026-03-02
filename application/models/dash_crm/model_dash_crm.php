@@ -627,8 +627,8 @@ class Model_dash_crm extends CI_Model {
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
             case 'ketepatan_total':
-                // Tampilkan semua komplain untuk ketepatan waktu
-                // Filter sumber dan status ketepatan akan diaplikasikan di bawah
+                // Hanya tampilkan data dengan status Done (status = 6)
+                $this->db->where('t.status', 6);
                 break;
             case 'status':
                 if (!empty($extra['status_id'])) {
@@ -813,8 +813,8 @@ class Model_dash_crm extends CI_Model {
                 $this->db->where('t.escalation_at IS NULL', null, false);
                 break;
             case 'ketepatan_total':
-                // Tampilkan semua komplain untuk ketepatan waktu
-                // Filter sumber dan status ketepatan akan diaplikasikan di bawah
+                // Hanya tampilkan data dengan status Done (status = 6)
+                $this->db->where('t.status', 6);
                 break;
             case 'status':
                 if (!empty($extra['status_id'])) {

@@ -280,7 +280,7 @@
     <div class="row g-3 mb-3">
       <div class="col-6 col-md">
         <div class="kpi-card" style="cursor: pointer;" onclick="openModal('ketepatan_total')">
-          <div class="kpi-label">Total Komplain</div>
+          <div class="kpi-label">Total Data Done</div>
           <div class="kpi-value"><?= number_format($total_ketepatan, 0, ',', '.') ?></div>
           <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
         </div>
