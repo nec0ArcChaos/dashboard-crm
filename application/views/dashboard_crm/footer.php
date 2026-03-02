@@ -591,11 +591,12 @@ function loadModalPage(page) {
       }
 
       // Render tabel
+      const jenisHeader = ['divisi', 'ketepatan_total'].includes(_currentModal.type) ? 'Kategori' : 'Jenis';
       let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>Jenis</th><th>Status</th><th>Waktu</th>
+            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th><th>Status</th><th>Waktu</th>
           </tr></thead><tbody>`;
 
       res.data.forEach(row => {
@@ -914,7 +915,7 @@ function loadKetepatanGlobalPage(page) {
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>Divisi</th><th>Jenis</th><th>Due Date</th><th>Done Date</th><th>Status</th>
+            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>Divisi</th><th>Kategori</th><th>Due Date</th><th>Done Date</th><th>Status</th>
           </tr></thead><tbody>`;
 
       res.data.forEach(row => {

@@ -42,8 +42,8 @@ class Model_dash_crm extends CI_Model {
      * Total semua komplain
      */
     public function get_total_komplain($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
             @$filter['sumber'], @$filter['divisi']
@@ -55,8 +55,8 @@ class Model_dash_crm extends CI_Model {
      * Komplain terverifikasi (status != 1)
      */
     public function get_terverifikasi($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status !=', 1);
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
@@ -69,8 +69,8 @@ class Model_dash_crm extends CI_Model {
      * Komplain belum terverifikasi (status = 1 = waiting)
      */
     public function get_belum_verifikasi($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status', 1);
         $this->_apply_filters(
             @$filter['date_from'], @$filter['date_to'],
@@ -92,32 +92,32 @@ class Model_dash_crm extends CI_Model {
         ];
 
         // Konsumen terverifikasi (status != 1)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
         $this->db->where('t.status !=', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['terverifikasi'] = $this->db->count_all_results();
 
         // Konsumen belum terverifikasi (status = 1 = waiting)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
         $this->db->where('t.status', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['belum'] = $this->db->count_all_results();
 
         // Sosmed terverifikasi (status != 1)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         $this->db->where('t.status !=', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['sosmed']['terverifikasi'] = $this->db->count_all_results();
 
         // Sosmed belum terverifikasi (status = 1 = waiting)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         $this->db->where('t.status', 1);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
@@ -136,8 +136,8 @@ class Model_dash_crm extends CI_Model {
      * Filter berdasarkan tanggal eskalasi (escalation_at)
      */
     public function get_sudah_eskalasi($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
         // Status 1,2,3 tidak dihitung sebagai sudah eskalasi
         $this->db->where('t.status NOT IN (1,2,3)', null, false);
@@ -168,8 +168,8 @@ class Model_dash_crm extends CI_Model {
      * Include: escalation_at IS NULL OR status IN (1,2,3)
      */
     public function get_belum_eskalasi($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         // Belum eskalasi = escalation_at NULL OR status 1,2,3 (meskipun escalation_at ada)
         $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(
@@ -186,8 +186,8 @@ class Model_dash_crm extends CI_Model {
      */
     public function get_trend_eskalasi($filter = []) {
         $this->db->select("DATE_FORMAT(t.escalation_at, '%Y-%m') as bulan, COUNT(*) as total");
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
         // Status 1,2,3 tidak dihitung dalam trend
         $this->db->where('t.status NOT IN (1,2,3)', null, false);
@@ -228,8 +228,8 @@ class Model_dash_crm extends CI_Model {
         ];
 
         // Konsumen sudah eskalasi (filter berdasarkan tanggal eskalasi, KECUALI status 1,2,3)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
         $this->db->where('t.status NOT IN (1,2,3)', null, false);
@@ -245,16 +245,16 @@ class Model_dash_crm extends CI_Model {
         $result['konsumen']['sudah'] = $this->db->count_all_results();
 
         // Konsumen belum eskalasi (escalation_at IS NULL OR status IN (1,2,3))
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('t.status_konsumen', 1);
         $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
         $result['konsumen']['belum'] = $this->db->count_all_results();
 
         // Sosmed sudah eskalasi (filter berdasarkan tanggal eskalasi, KECUALI status 1,2,3)
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
         $this->db->where('t.status NOT IN (1,2,3)', null, false);
@@ -270,8 +270,8 @@ class Model_dash_crm extends CI_Model {
         $result['sosmed']['sudah'] = $this->db->count_all_results();
 
         // Sosmed belum eskalasi (escalation_at IS NULL OR status IN (1,2,3))
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
         $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
         $this->_apply_filters(@$filter['date_from'], @$filter['date_to'], null, @$filter['divisi']);
@@ -291,7 +291,7 @@ class Model_dash_crm extends CI_Model {
         // 1. Ambil SEMUA divisi unik dari cm_category
         $divisi_sql = "
             SELECT DISTINCT c.divisi
-            FROM cm_category c
+            FROM hris.cm_category c
             WHERE c.divisi IS NOT NULL
             ORDER BY c.divisi
         ";
@@ -312,8 +312,8 @@ class Model_dash_crm extends CI_Model {
                          AND CAST(t.done_date AS DATE) > t.due_date
                          AND t.due_date != '0000-00-00' 
                          THEN 1 ELSE 0 END) as late
-            FROM cm_task t
-            LEFT JOIN cm_category c ON c.id = t.id_category
+            FROM hris.cm_task t
+            LEFT JOIN hris.cm_category c ON c.id = t.id_category
             WHERE t.status = 6
               AND t.done_date IS NOT NULL
               AND c.divisi IS NOT NULL
@@ -355,7 +355,8 @@ class Model_dash_crm extends CI_Model {
         }
 
         // 4. Daftar divisi yang direkam dalam database (sesuai dengan requirement)
-        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate, Rumah dan Bangunan
+        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate
+        // Catatan: "Rumah dan Bangunan" adalah kategori di bawah divisi Project, bukan divisi tersendiri
         $valid_divisi = [
             'Project',
             'MEP',
@@ -365,7 +366,6 @@ class Model_dash_crm extends CI_Model {
             'Sales',
             'CRM',
             'Estate',
-            'Rumah dan Bangunan',
         ];
 
         // 5. Susun result dengan SEMUA divisi yang valid, bahkan yang tidak memiliki data
@@ -404,7 +404,7 @@ class Model_dash_crm extends CI_Model {
             AVG(pelayanan) as avg_pelayanan,
             AVG(kualitas) as avg_kualitas,
             AVG(respons) as avg_respons');
-        $this->db->from('cm_rating');
+        $this->db->from('hris.cm_rating');
         $row = $this->db->get()->row_array();
         return $row;
     }
@@ -414,7 +414,7 @@ class Model_dash_crm extends CI_Model {
      */
     public function get_distribusi_rating() {
         $this->db->select('ROUND(avg_rating) as bintang, COUNT(*) as total');
-        $this->db->from('cm_rating');
+        $this->db->from('hris.cm_rating');
         $this->db->where('avg_rating IS NOT NULL', null, false);
         $this->db->group_by('ROUND(avg_rating)');
         $this->db->order_by('bintang', 'ASC');
@@ -434,8 +434,8 @@ class Model_dash_crm extends CI_Model {
         $params = [];
         $sql = "
             SELECT s.id, s.status, s.color, COUNT(t.id_task) as total
-            FROM cm_status s
-            LEFT JOIN cm_task t ON t.status = s.id
+            FROM hris.cm_status s
+            LEFT JOIN hris.cm_task t ON t.status = s.id
         ";
 
         $wheres = [];
@@ -495,8 +495,7 @@ class Model_dash_crm extends CI_Model {
                 'MEP'                => 'MEP',
                 'Sales/Mkt'          => 'Sales',
                 'Sosmed'             => 'CRM',
-                'Aftersales'         => 'Aftersales',
-                'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                'Aftersales'         => 'Project',
             ];
             $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
                 ? $divisi_reverse_map[$extra['divisi']] 
@@ -504,7 +503,7 @@ class Model_dash_crm extends CI_Model {
             
             // Query kategori dari divisi ini
             $cat_result = $this->db->query(
-                "SELECT id FROM cm_category WHERE divisi = ?",
+                "SELECT id FROM hris.cm_category WHERE divisi = ?",
                 [$db_divisi]
             )->result_array();
             
@@ -516,9 +515,9 @@ class Model_dash_crm extends CI_Model {
             t.due_date, t.done_date, t.created_at,
             t.verified_at, t.escalation_at,
             c.divisi, c.category');
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->join('cm_status s', 's.id = t.status', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('hris.cm_status s', 's.id = t.status', 'left');
 
         switch ($type) {
             case 'verif_total':
@@ -689,8 +688,7 @@ class Model_dash_crm extends CI_Model {
                 'MEP'                => 'MEP',
                 'Sales/Mkt'          => 'Sales',
                 'Sosmed'             => 'CRM',
-                'Aftersales'         => 'Aftersales',
-                'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                'Aftersales'         => 'Project',
             ];
             $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
                 ? $divisi_reverse_map[$extra['divisi']] 
@@ -698,7 +696,7 @@ class Model_dash_crm extends CI_Model {
             
             // Query kategori dari divisi ini
             $cat_result = $this->db->query(
-                "SELECT id FROM cm_category WHERE divisi = ?",
+                "SELECT id FROM hris.cm_category WHERE divisi = ?",
                 [$db_divisi]
             )->result_array();
             
@@ -706,8 +704,8 @@ class Model_dash_crm extends CI_Model {
         }
 
         // Reuse query sama seperti get_detail_modal tapi pakai count
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
 
         switch ($type) {
             case 'verif_total':
@@ -880,9 +878,10 @@ class Model_dash_crm extends CI_Model {
     public function get_list_divisi() {
         $query = $this->db->query("
             SELECT divisi
-            FROM cm_category
+            FROM hris.cm_category
             WHERE divisi IS NOT NULL
               AND divisi != ''
+              AND divisi != 'Other'
               AND is_show = 1
             GROUP BY divisi
             ORDER BY divisi ASC
@@ -906,15 +905,14 @@ class Model_dash_crm extends CI_Model {
             t.konsumen,
             t.project,
             t.blok,
-            t.task as jenis,
             t.due_date,
             t.done_date,
             c.divisi,
             c.category,
             t.created_at
         ');
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
 
         // Hanya task dengan status = 6 (Done) yang memiliki due_date, exclude divisi "Other"
         $this->db->where('t.status', 6);
@@ -968,9 +966,9 @@ class Model_dash_crm extends CI_Model {
             t.verified_at,
             t.created_at
         ');
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->join('cm_status s', 's.id = t.status', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('hris.cm_status s', 's.id = t.status', 'left');
 
         // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
         $this->db->where_not_in('t.status', [1, 2, 8, 9]);
@@ -1021,8 +1019,8 @@ class Model_dash_crm extends CI_Model {
      * Filter: Exclude status 1, 2, 8, 9 (Waiting, Waiting Head Div, Rescheduled, Rescheduled 2)
      */
     public function count_drilldown_verifikasi($filter = []) {
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
 
         // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
         $this->db->where_not_in('t.status', [1, 2, 8, 9]);
@@ -1063,9 +1061,9 @@ class Model_dash_crm extends CI_Model {
             s.status as status_label,
             t.created_at
         ');
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->join('cm_status s', 's.id = t.status', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('hris.cm_status s', 's.id = t.status', 'left');
 
         // Filter: Exclude status 1 (Waiting), 2 (Waiting Head Div), 8 (Rescheduled), 9 (Rescheduled 2)
         // HARUS SAMA dengan get_drilldown_verifikasi
@@ -1119,9 +1117,9 @@ class Model_dash_crm extends CI_Model {
             t.escalation_at, t.escalation_by, t.escalation_name,
             t.status_konsumen,
             c.divisi, c.category, c.id as id_category');
-        $this->db->from('cm_task t');
-        $this->db->join('cm_category c', 'c.id = t.id_category', 'left');
-        $this->db->join('cm_status s', 's.id = t.status', 'left');
+        $this->db->from('hris.cm_task t');
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
+        $this->db->join('hris.cm_status s', 's.id = t.status', 'left');
 
         switch ($type) {
             case 'verif_total':
@@ -1195,8 +1193,7 @@ class Model_dash_crm extends CI_Model {
                         'MEP'                => 'MEP',
                         'Sales/Mkt'          => 'Sales',
                         'Sosmed'             => 'CRM',
-                        'Aftersales'         => 'Aftersales',
-                        'Rumah dan Bangunan' => 'Rumah dan Bangunan',
+                        'Aftersales'         => 'Project',
                     ];
                     $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
                         ? $divisi_reverse_map[$extra['divisi']] 
@@ -1205,7 +1202,7 @@ class Model_dash_crm extends CI_Model {
                     // Query kategori dari divisi ini
                     $divisi_category_ids = [];
                     $cat_result = $this->db->query(
-                        "SELECT id FROM cm_category WHERE divisi = ?",
+                        "SELECT id FROM hris.cm_category WHERE divisi = ?",
                         [$db_divisi]
                     )->result_array();
                     
