@@ -629,7 +629,11 @@ class Model_dash_crm extends CI_Model {
                 break;
             case 'ketepatan_total':
                 // Hanya tampilkan data dengan status Done (status = 6)
+                // Sinkronkan kondisi dengan query card di get_ketepatan_waktu()
                 $this->db->where('t.status', 6);
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('c.divisi IS NOT NULL', null, false);
+                $this->db->where('c.divisi !=', 'Other');
                 break;
             case 'status':
                 if (!empty($extra['status_id'])) {
@@ -823,7 +827,11 @@ class Model_dash_crm extends CI_Model {
                 break;
             case 'ketepatan_total':
                 // Hanya tampilkan data dengan status Done (status = 6)
+                // Sinkronkan kondisi dengan query card di get_ketepatan_waktu()
                 $this->db->where('t.status', 6);
+                $this->db->where('t.done_date IS NOT NULL', null, false);
+                $this->db->where('c.divisi IS NOT NULL', null, false);
+                $this->db->where('c.divisi !=', 'Other');
                 break;
             case 'status':
                 if (!empty($extra['status_id'])) {
