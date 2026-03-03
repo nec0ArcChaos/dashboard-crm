@@ -26,7 +26,7 @@ class Model_dash_crm extends CI_Model {
         if ($sumber === 'konsumen') {
             $this->db->where('t.status_konsumen', 1);
         } elseif ($sumber === 'sosmed') {
-            $this->db->where('t.status_konsumen IS NULL OR t.status_konsumen = 0', null, false);
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
         }
         // Filter divisi dari cm_category
         if ($divisi && $divisi !== 'all') {
