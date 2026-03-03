@@ -209,28 +209,13 @@ new Chart('chartVerifSumber', {
         },
         onClick:(e, legendItem, chart) => {
           e.native.stopImmediatePropagation();
-          const datasetIndex = legendItem.datasetIndex; // 0 = terverifikasi, 1 = belum
-          if (datasetIndex === 0) {
-            openModal('verif_terverifikasi');
-          } else {
-            openModal('verif_belum');
-          }
+          openModal('verif_total');
         }
       }
     },
     scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#E4E8F0'}} },
     onClick:(e,els)=>{
-      if(els.length) {
-        const barIndex = els[0].index;
-        const datasetIndex = els[0].datasetIndex; // 0 = terverifikasi, 1 = belum
-        const sumberType = verifBarTypes[barIndex];
-
-        if (sumberType === 'konsumen') {
-          openModal(datasetIndex === 0 ? 'verif_konsumen' : 'verif_konsumen_belum');
-        } else {
-          openModal(datasetIndex === 0 ? 'verif_sosmed_v' : 'verif_sosmed_b');
-        }
-      }
+      if(els.length) openModal('verif_total');
     }
   }
 });
@@ -244,7 +229,7 @@ new Chart('chartVerifDonut', {
   options:{
     responsive:true, maintainAspectRatio:false, cutout:'68%',
     plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
-    onClick:(e,els)=>{ if(els.length) openModal(els[0].index===0?'verif_terverifikasi':'verif_belum'); }
+    onClick:(e,els)=>{ if(els.length) openModal('verif_total'); }
   }
 });
 

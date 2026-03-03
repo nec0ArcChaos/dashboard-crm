@@ -58,7 +58,7 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="kpi-card <?= $pct_verif >= 80 ? 'green' : 'orange' ?>">
+        <div class="kpi-card <?= $pct_verif >= 80 ? 'green' : 'orange' ?>" style="cursor:pointer" onclick="openModal('verif_total')">
           <div class="kpi-label">Terverifikasi</div>
           <div class="kpi-value"><?= number_format($terverifikasi, 0, ',', '.') ?></div>
           <div class="kpi-meta">
@@ -70,7 +70,7 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="kpi-card <?= $belum_verifikasi > 0 ? 'red' : 'green' ?>">
+        <div class="kpi-card <?= $belum_verifikasi > 0 ? 'red' : 'green' ?>" style="cursor:pointer" onclick="openModal('verif_total')">
           <div class="kpi-label">Belum Terverifikasi</div>
           <div class="kpi-value"><?= number_format($belum_verifikasi, 0, ',', '.') ?></div>
           <div class="kpi-meta">
@@ -114,7 +114,7 @@
       <div class="col-12 col-lg-6">
         <div class="chart-card">
           <div class="chart-title">Verifikasi per Sumber</div>
-          <div class="chart-sub">Klik bar atau legend untuk detail</div>
+          <div class="chart-sub">Klik bar atau legend untuk melihat semua data</div>
           <div style="height:220px"><canvas id="chartVerifSumber"></canvas></div>
           <div style="font-size:12px; color:#999; text-align:center; margin-top:8px; padding:0 8px;">
            Gunakan <strong>legend</strong> untuk melihat semua data (kecil atau besar)
@@ -134,13 +134,13 @@
           <div class="chart-sub">Per sumber &amp; status</div>
           <div class="mt-2">
             <?php if ($filter['sumber'] !== 'sosmed'): ?>
-            <div class="status-item" onclick="openModal('verif_konsumen')">
+            <div class="status-item" onclick="openModal('verif_total')">
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Konsumen — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['terverifikasi'], 0, ',', '.') ?></div>
               <span class="pill <?= $pct_konsumen_verif >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_konsumen_verif ?>%</span>
             </div>
-            <div class="status-item" onclick="openModal('verif_konsumen_belum')">
+            <div class="status-item" onclick="openModal('verif_total')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Konsumen — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['belum'], 0, ',', '.') ?></div>
@@ -160,13 +160,13 @@
             </div>
             <?php endif; ?>
             <?php if ($filter['sumber'] !== 'konsumen'): ?>
-            <div class="status-item" onclick="openModal('verif_sosmed_v')">
+            <div class="status-item" onclick="openModal('verif_total')">
               <div class="status-dot-sm" style="background:#1A56DB"></div>
               <div class="status-name">Sosmed — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['terverifikasi'], 0, ',', '.') ?></div>
               <span class="pill <?= $pct_verif_sosmed >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_verif_sosmed ?>%</span>
             </div>
-            <div class="status-item" onclick="openModal('verif_sosmed_b')">
+            <div class="status-item" onclick="openModal('verif_total')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Sosmed — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['belum'], 0, ',', '.') ?></div>
