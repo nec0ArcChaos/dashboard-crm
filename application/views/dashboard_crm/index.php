@@ -122,9 +122,9 @@
         </div>
       </div>
       <div class="col-12 col-md-6 col-lg-3">
-        <div class="chart-card" style="cursor:pointer" onclick="openModal('verif_terverifikasi')">
-          <div class="chart-title">Terverifikasi <small class="text-primary" style="font-size:10px">↗ Detail</small></div>
-          <div class="chart-sub">Klik untuk drill-down</div>
+        <div class="chart-card">
+          <div class="chart-title">Terverifikasi</div>
+          <div class="chart-sub">&nbsp;</div>
           <div style="height:180px"><canvas id="chartVerifDonut"></canvas></div>
         </div>
       </div>
