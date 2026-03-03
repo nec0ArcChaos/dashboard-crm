@@ -57,16 +57,16 @@
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
               <div class="d-flex gap-2">
                 <label style="margin:0"><input type="checkbox" id="mfSemua" checked onchange="toggleModalFilterAll(this)"> <span style="font-size:12px">Semua</span></label>
-                <label style="margin:0"><input type="checkbox" id="mfKonsumen" onchange="updateModalFilters()"> <span style="font-size:12px">Konsumen</span></label>
-                <label style="margin:0"><input type="checkbox" id="mfSosmed" onchange="updateModalFilters()"> <span style="font-size:12px">Sosmed</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfKonsumen" onchange="selectSumber(this,'konsumen')"> <span style="font-size:12px">Konsumen</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfSosmed" onchange="selectSumber(this,'sosmed')"> <span style="font-size:12px">Sosmed</span></label>
               </div>
             </div>
             <!-- Filter Status (dynamic label) -->
             <div class="d-flex align-items-center gap-2" id="mfStatusGroup">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap" id="mfStatusLabel">Status:</label>
               <div class="d-flex gap-2">
-                <label style="margin:0"><input type="checkbox" id="mfStatus1" onchange="updateModalFilters()"> <span style="font-size:12px" id="mfStatus1Label">-</span></label>
-                <label style="margin:0"><input type="checkbox" id="mfStatus2" onchange="updateModalFilters()"> <span style="font-size:12px" id="mfStatus2Label">-</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfStatus1" onchange="selectStatus(this,1)"> <span style="font-size:12px" id="mfStatus1Label">-</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfStatus2" onchange="selectStatus(this,2)"> <span style="font-size:12px" id="mfStatus2Label">-</span></label>
               </div>
             </div>
           </div>
@@ -491,26 +491,44 @@ function toggleModalFilterAll(checkbox) {
   loadModalPage(1);
 }
 
-function updateModalFilters() {
+// Cek apakah semua filter tidak aktif → kembalikan ke Semua
+function _checkResetToAll() {
   const konsumen = document.getElementById('mfKonsumen').checked;
   const sosmed   = document.getElementById('mfSosmed').checked;
   const s1       = document.getElementById('mfStatus1').checked;
   const s2       = document.getElementById('mfStatus2').checked;
-
-  if (konsumen || sosmed || s1 || s2) {
-    document.getElementById('mfSemua').checked = false;
+  if (!konsumen && !sosmed && !s1 && !s2) {
+    document.getElementById('mfSemua').checked = true;
   }
+}
 
-  // Sumber
-  if (konsumen && !sosmed) _mfSumber = 'konsumen';
-  else if (sosmed && !konsumen) _mfSumber = 'sosmed';
-  else _mfSumber = 'all';
+// Handler untuk filter Sumber — mutual exclusive
+function selectSumber(checkbox, value) {
+  if (checkbox.checked) {
+    // Uncheck pasangan, uncheck Semua
+    if (value === 'konsumen') document.getElementById('mfSosmed').checked = false;
+    else                       document.getElementById('mfKonsumen').checked = false;
+    document.getElementById('mfSemua').checked = false;
+    _mfSumber = value;
+  } else {
+    _mfSumber = 'all';
+    _checkResetToAll();
+  }
+  loadModalPage(1);
+}
 
-  // Status
-  if (s1 && !s2) _mfStatus = _mfStatusVal1;
-  else if (s2 && !s1) _mfStatus = _mfStatusVal2;
-  else _mfStatus = 'all';
-
+// Handler untuk filter Status — mutual exclusive
+function selectStatus(checkbox, idx) {
+  if (checkbox.checked) {
+    // Uncheck pasangan, uncheck Semua
+    if (idx === 1) document.getElementById('mfStatus2').checked = false;
+    else            document.getElementById('mfStatus1').checked = false;
+    document.getElementById('mfSemua').checked = false;
+    _mfStatus = (idx === 1) ? _mfStatusVal1 : _mfStatusVal2;
+  } else {
+    _mfStatus = 'all';
+    _checkResetToAll();
+  }
   loadModalPage(1);
 }
 
