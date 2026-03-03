@@ -75,7 +75,7 @@
         <div id="ketepatanTotalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
           <div class="d-flex flex-wrap gap-3 align-items-center">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
-            
+
             <!-- Filter Sumber -->
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
@@ -94,6 +94,21 @@
                 <label style="margin:0"><input type="checkbox" id="ketepatanTotalLate" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Late</span></label>
               </div>
             </div>
+          </div>
+        </div>
+        <div id="divisiDateFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
+              <input type="date" id="divisiDueDateFrom" class="form-control form-control-sm" style="width:140px">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
+              <input type="date" id="divisiDoneDateFrom" class="form-control form-control-sm" style="width:140px">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="applyDivisiDateFilter()">Terapkan</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetDivisiDateFilter()">Reset</button>
           </div>
         </div>
         <div id="modalContent"></div>
@@ -401,6 +416,10 @@ let _modalVerifTotalSumber = 'all'; // Filter sumber untuk verif_total (all, kon
 let _modalVerifTotalStatus = 'all'; // Filter status untuk verif_total (all, verified, unverified)
 let _modalKetepatanTotalSumber = 'all'; // Filter sumber untuk ketepatan_total (all, konsumen, sosmed)
 let _modalKetepatanTotalStatus = 'all'; // Filter status untuk ketepatan_total (all, ontime, late)
+let _modalDivisiDueDateFrom  = ''; // Filter due_date dari untuk divisi drilldown
+let _modalDivisiDueDateTo    = ''; // Filter due_date sampai untuk divisi drilldown
+let _modalDivisiDoneDateFrom = ''; // Filter done_date dari untuk divisi drilldown
+let _modalDivisiDoneDateTo   = ''; // Filter done_date sampai untuk divisi drilldown
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
@@ -415,10 +434,12 @@ function openModal(type, extra = {}) {
   // Tampilkan/sembunyikan filter berdasarkan tipe modal
   const verifTotalFilters = document.getElementById('verifTotalFilters');
   const ketepatanTotalFilters = document.getElementById('ketepatanTotalFilters');
-  
+  const divisiDateFilters = document.getElementById('divisiDateFilters');
+
   if (type === 'verif_total') {
     verifTotalFilters.style.display = 'block';
     ketepatanTotalFilters.style.display = 'none';
+    divisiDateFilters.style.display = 'none';
     // Reset checkbox
     document.getElementById('verifTotalSemua').checked = true;
     document.getElementById('verifTotalKonsumen').checked = false;
@@ -428,15 +449,25 @@ function openModal(type, extra = {}) {
   } else if (type === 'ketepatan_total') {
     ketepatanTotalFilters.style.display = 'block';
     verifTotalFilters.style.display = 'none';
+    divisiDateFilters.style.display = 'none';
     // Reset checkbox
     document.getElementById('ketepatanTotalSemua').checked = true;
     document.getElementById('ketepatanTotalKonsumen').checked = false;
     document.getElementById('ketepatanTotalSosmed').checked = false;
     document.getElementById('ketepatanTotalOnTime').checked = false;
     document.getElementById('ketepatanTotalLate').checked = false;
+  } else if (type === 'divisi') {
+    divisiDateFilters.style.display = 'block';
+    verifTotalFilters.style.display = 'none';
+    ketepatanTotalFilters.style.display = 'none';
+    // Reset date inputs & state
+    document.getElementById('divisiDueDateFrom').value  = '';
+    document.getElementById('divisiDoneDateFrom').value = '';
+    _modalDivisiDueDateFrom = _modalDivisiDueDateTo = _modalDivisiDoneDateFrom = _modalDivisiDoneDateTo = '';
   } else {
     verifTotalFilters.style.display = 'none';
     ketepatanTotalFilters.style.display = 'none';
+    divisiDateFilters.style.display = 'none';
   }
 
   document.getElementById('modalTitle').textContent = 'Memuat data...';
@@ -562,6 +593,10 @@ function loadModalPage(page) {
     modal_verif_status: _modalVerifTotalStatus, // Filter status untuk verif_total
     modal_ketepatan_sumber: _modalKetepatanTotalSumber, // Filter sumber untuk ketepatan_total
     modal_ketepatan_status: _modalKetepatanTotalStatus, // Filter status untuk ketepatan_total
+    divisi_due_date_from:  _modalDivisiDueDateFrom,  // Filter due_date dari untuk divisi
+    divisi_due_date_to:    _modalDivisiDueDateTo,    // Filter due_date sampai untuk divisi
+    divisi_done_date_from: _modalDivisiDoneDateFrom, // Filter done_date dari untuk divisi
+    divisi_done_date_to:   _modalDivisiDoneDateTo,   // Filter done_date sampai untuk divisi
   });
 
   const fetchUrl = BASE_URL + 'dash_crm/modal_detail?' + params.toString();
@@ -639,20 +674,29 @@ function loadModalPage(page) {
 
       // Render tabel
       const jenisHeader = ['divisi', 'ketepatan_total'].includes(_currentModal.type) ? 'Kategori' : 'Jenis';
+      const isDivisiModal = _currentModal.type === 'divisi';
+      const dueDateDoneHeader = isDivisiModal
+        ? '<th>Due Date</th><th>Done Date</th>'
+        : '';
+
       let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th><th>Status</th><th>Waktu</th>
+            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th>${dueDateDoneHeader}<th>Status</th><th>Waktu</th>
           </tr></thead><tbody>`;
 
       res.data.forEach(row => {
         const waktuClass = row.waktu_status === 'On Time' ? 'ontime' : row.waktu_status === 'Late' ? 'late' : 'working';
+        const dueDateDoneCells = isDivisiModal
+          ? `<td><small>${row.due_date || '-'}</small></td><td><small>${row.done_date || '-'}</small></td>`
+          : '';
         html += `<tr>
           <td><code style="font-size:11px">${row.id_task}</code></td>
           <td>${row.konsumen || '-'}</td>
           <td><small>${row.lokasi || '-'}</small></td>
           <td><small>${row.jenis || '-'}</small></td>
+          ${dueDateDoneCells}
           <td><span class="badge-status badge-${getBadgeClass(row.status_id)}">${row.status || '-'}</span></td>
           <td><span class="badge-status badge-${waktuClass}">${row.waktu_status}</span></td>
         </tr>`;
@@ -748,6 +792,10 @@ if (document.getElementById('btnExport')) {
       modal_verif_status: _modalVerifTotalStatus,
       modal_ketepatan_sumber: _modalKetepatanTotalSumber,
       modal_ketepatan_status: _modalKetepatanTotalStatus,
+      divisi_due_date_from:  _modalDivisiDueDateFrom,
+      divisi_due_date_to:    _modalDivisiDueDateTo,
+      divisi_done_date_from: _modalDivisiDoneDateFrom,
+      divisi_done_date_to:   _modalDivisiDoneDateTo,
     });
     window.location.href = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
   });
@@ -1011,6 +1059,27 @@ function resetKetepatanDateFilter() {
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
   loadKetepatanGlobalPage(1);
+}
+
+function applyDivisiDateFilter() {
+  _modalDivisiDueDateFrom  = document.getElementById('divisiDueDateFrom').value;
+  _modalDivisiDueDateTo    = _modalDivisiDueDateFrom; // exact date
+  _modalDivisiDoneDateFrom = document.getElementById('divisiDoneDateFrom').value;
+  _modalDivisiDoneDateTo   = _modalDivisiDoneDateFrom; // exact date
+  document.getElementById('modalContent').innerHTML = '';
+  document.getElementById('modalPagination').innerHTML = '';
+  document.getElementById('modalLoading').style.display = 'block';
+  loadModalPage(1);
+}
+
+function resetDivisiDateFilter() {
+  _modalDivisiDueDateFrom = _modalDivisiDueDateTo = _modalDivisiDoneDateFrom = _modalDivisiDoneDateTo = '';
+  document.getElementById('divisiDueDateFrom').value  = '';
+  document.getElementById('divisiDoneDateFrom').value = '';
+  document.getElementById('modalContent').innerHTML = '';
+  document.getElementById('modalPagination').innerHTML = '';
+  document.getElementById('modalLoading').style.display = 'block';
+  loadModalPage(1);
 }
 
 function renderKetepatanGlobalPagination(total, per_page, current_page) {

@@ -655,6 +655,20 @@ class Model_dash_crm extends CI_Model {
                     // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
                     $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                    // Apply due_date filter
+                    if (!empty($extra['divisi_due_date_from'])) {
+                        $this->db->where('t.due_date >=', $extra['divisi_due_date_from']);
+                    }
+                    if (!empty($extra['divisi_due_date_to'])) {
+                        $this->db->where('t.due_date <=', $extra['divisi_due_date_to']);
+                    }
+                    // Apply done_date filter
+                    if (!empty($extra['divisi_done_date_from'])) {
+                        $this->db->where('t.done_date >=', $extra['divisi_done_date_from'] . ' 00:00:00');
+                    }
+                    if (!empty($extra['divisi_done_date_to'])) {
+                        $this->db->where('t.done_date <=', $extra['divisi_done_date_to'] . ' 23:59:59');
+                    }
                 } else {
                     // Tidak ada kategori untuk divisi ini, return no results
                     $this->db->where('1', '0');
@@ -853,6 +867,20 @@ class Model_dash_crm extends CI_Model {
                     // Filter untuk ketepatan waktu: komplain yang sudah done dan sudah di-eskalasi
                     $this->db->where('t.done_date IS NOT NULL', null, false);
                     $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                    // Apply due_date filter
+                    if (!empty($extra['divisi_due_date_from'])) {
+                        $this->db->where('t.due_date >=', $extra['divisi_due_date_from']);
+                    }
+                    if (!empty($extra['divisi_due_date_to'])) {
+                        $this->db->where('t.due_date <=', $extra['divisi_due_date_to']);
+                    }
+                    // Apply done_date filter
+                    if (!empty($extra['divisi_done_date_from'])) {
+                        $this->db->where('t.done_date >=', $extra['divisi_done_date_from'] . ' 00:00:00');
+                    }
+                    if (!empty($extra['divisi_done_date_to'])) {
+                        $this->db->where('t.done_date <=', $extra['divisi_done_date_to'] . ' 23:59:59');
+                    }
                 } else {
                     // Tidak ada kategori untuk divisi ini, return no results
                     $this->db->where('1', '0');

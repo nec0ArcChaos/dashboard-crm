@@ -269,6 +269,12 @@ class Dash_crm extends CI_Controller {
         $modal_ketepatan_sumber = $this->input->get('modal_ketepatan_sumber');
         $modal_ketepatan_status = $this->input->get('modal_ketepatan_status');
 
+        // Get divisi date filter params
+        $divisi_due_date_from  = $this->input->get('divisi_due_date_from')  ?: '';
+        $divisi_due_date_to    = $this->input->get('divisi_due_date_to')    ?: '';
+        $divisi_done_date_from = $this->input->get('divisi_done_date_from') ?: '';
+        $divisi_done_date_to   = $this->input->get('divisi_done_date_to')   ?: '';
+
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
@@ -293,6 +299,13 @@ class Dash_crm extends CI_Controller {
         if ($modal_ketepatan_status && $modal_ketepatan_status !== 'all') {
             $extra['modal_ketepatan_status'] = $modal_ketepatan_status;
         }
+        // Pass divisi date filters hanya untuk type='divisi'
+        if ($type === 'divisi') {
+            if ($divisi_due_date_from)  $extra['divisi_due_date_from']  = $divisi_due_date_from;
+            if ($divisi_due_date_to)    $extra['divisi_due_date_to']    = $divisi_due_date_to;
+            if ($divisi_done_date_from) $extra['divisi_done_date_from'] = $divisi_done_date_from;
+            if ($divisi_done_date_to)   $extra['divisi_done_date_to']   = $divisi_done_date_to;
+        }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
         $total = $this->dashboard_m->count_detail_modal($type, $extra, $filter);
@@ -312,6 +325,13 @@ class Dash_crm extends CI_Controller {
                 }
             }
 
+            $due_date_fmt  = null;
+            $done_date_fmt = null;
+            if ($type === 'divisi') {
+                $due_date_fmt  = (!empty($row['due_date'])  && $row['due_date']  !== '0000-00-00')             ? date('d-m-Y', strtotime($row['due_date']))            : '-';
+                $done_date_fmt = (!empty($row['done_date']) && $row['done_date'] !== '0000-00-00 00:00:00')    ? date('d-m-Y H:i', strtotime($row['done_date']))       : '-';
+            }
+
             $data[] = [
                 'id_task'      => $row['id_task'],
                 'konsumen'     => $row['konsumen'],
@@ -322,6 +342,8 @@ class Dash_crm extends CI_Controller {
                 'divisi'       => $row['divisi'],
                 'waktu_status' => $waktu_status,
                 'created_at'   => $row['created_at'],
+                'due_date'     => $due_date_fmt,
+                'done_date'    => $done_date_fmt,
             ];
         }
 
