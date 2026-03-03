@@ -752,6 +752,20 @@ class Model_dash_crm extends CI_Model {
             }
         }
 
+        // Apply generic due_date / done_date filter (untuk tipe verif_*, esk_*, status)
+        if (!empty($extra['modal_due_date_from'])) {
+            $this->db->where('t.due_date >=', $extra['modal_due_date_from']);
+        }
+        if (!empty($extra['modal_due_date_to'])) {
+            $this->db->where('t.due_date <=', $extra['modal_due_date_to']);
+        }
+        if (!empty($extra['modal_done_date_from'])) {
+            $this->db->where('t.done_date >=', $extra['modal_done_date_from'] . ' 00:00:00');
+        }
+        if (!empty($extra['modal_done_date_to'])) {
+            $this->db->where('t.done_date <=', $extra['modal_done_date_to'] . ' 23:59:59');
+        }
+
         // Apply global filter
         if (!empty($filter['date_from'])) {
             $this->db->where('t.created_at >=', $filter['date_from'] . ' 00:00:00');
@@ -952,23 +966,6 @@ class Model_dash_crm extends CI_Model {
             }
         }
 
-        // Apply modal ketepatan filter (on time vs late)
-        if (!empty($extra['modal_ketepatan'])) {
-            if ($extra['modal_ketepatan'] === 'ontime') {
-                // On Time: done_date <= due_date
-                $this->db->where('t.done_date IS NOT NULL', null, false);
-                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
-                $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
-            } elseif ($extra['modal_ketepatan'] === 'late') {
-                // Late: done_date > due_date
-                $this->db->where('t.done_date IS NOT NULL', null, false);
-                $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
-                $this->db->where('DATE(t.done_date) > t.due_date', null, false);
-            }
-        }
-
         // Apply modal ketepatan sumber filter untuk ketepatan_total modal
         if (!empty($extra['modal_ketepatan_sumber'])) {
             if ($extra['modal_ketepatan_sumber'] === 'konsumen') {
@@ -984,15 +981,27 @@ class Model_dash_crm extends CI_Model {
                 // On Time: done_date <= due_date
                 $this->db->where('t.done_date IS NOT NULL', null, false);
                 $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
                 $this->db->where('DATE(t.done_date) <= t.due_date', null, false);
             } elseif ($extra['modal_ketepatan_status'] === 'late') {
                 // Late: done_date > due_date
                 $this->db->where('t.done_date IS NOT NULL', null, false);
                 $this->db->where('t.due_date IS NOT NULL AND t.due_date != "0000-00-00"', null, false);
-                // Using a raw where clause to properly compare dates
                 $this->db->where('DATE(t.done_date) > t.due_date', null, false);
             }
+        }
+
+        // Apply generic due_date / done_date filter (untuk tipe verif_*, esk_*, status)
+        if (!empty($extra['modal_due_date_from'])) {
+            $this->db->where('t.due_date >=', $extra['modal_due_date_from']);
+        }
+        if (!empty($extra['modal_due_date_to'])) {
+            $this->db->where('t.due_date <=', $extra['modal_due_date_to']);
+        }
+        if (!empty($extra['modal_done_date_from'])) {
+            $this->db->where('t.done_date >=', $extra['modal_done_date_from'] . ' 00:00:00');
+        }
+        if (!empty($extra['modal_done_date_to'])) {
+            $this->db->where('t.done_date <=', $extra['modal_done_date_to'] . ' 23:59:59');
         }
 
         if (!empty($filter['date_from'])) {

@@ -263,12 +263,52 @@ class Dash_crm extends CI_Controller {
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
-        if ($mf_sumber !== 'all')    $extra['mf_sumber']         = $mf_sumber;
-        if ($mf_status !== 'all')    $extra['mf_status']         = $mf_status;
-        if ($mf_due_date_from)       $extra['mf_due_date_from']  = $mf_due_date_from;
-        if ($mf_due_date_to)         $extra['mf_due_date_to']    = $mf_due_date_to;
-        if ($mf_done_date_from)      $extra['mf_done_date_from'] = $mf_done_date_from;
-        if ($mf_done_date_to)        $extra['mf_done_date_to']   = $mf_done_date_to;
+
+        // Route mf_sumber ke key spesifik yang dibaca model (per kelompok tipe)
+        if ($mf_sumber !== 'all') {
+            if (strpos($type, 'verif') === 0) {
+                $extra['modal_verif_sumber']     = $mf_sumber;
+            } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
+                $extra['modal_ketepatan_sumber'] = $mf_sumber;
+            } else {
+                // esk_*, status
+                $extra['modal_sumber']           = $mf_sumber;
+            }
+        }
+
+        // Route mf_status ke key spesifik yang dibaca model (per kelompok tipe)
+        if ($mf_status !== 'all') {
+            if (strpos($type, 'verif') === 0) {
+                $extra['modal_verif_status']  = $mf_status; // verified / unverified
+            } elseif (strpos($type, 'esk') === 0) {
+                $extra['modal_eskalasi']      = $mf_status; // sudah / belum
+            } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
+                $extra['modal_ketepatan_status'] = $mf_status; // ontime / late
+            }
+            // tipe 'status' tidak memiliki sub-filter status
+        }
+
+        // Route filter tanggal ke key spesifik yang dibaca model
+        if ($mf_due_date_from) {
+            if ($type === 'ketepatan_total')    $extra['ketepatan_total_due_date_from'] = $mf_due_date_from;
+            elseif ($type === 'divisi')         $extra['divisi_due_date_from']          = $mf_due_date_from;
+            else                                $extra['modal_due_date_from']            = $mf_due_date_from;
+        }
+        if ($mf_due_date_to) {
+            if ($type === 'ketepatan_total')    $extra['ketepatan_total_due_date_to']   = $mf_due_date_to;
+            elseif ($type === 'divisi')         $extra['divisi_due_date_to']             = $mf_due_date_to;
+            else                                $extra['modal_due_date_to']              = $mf_due_date_to;
+        }
+        if ($mf_done_date_from) {
+            if ($type === 'ketepatan_total')    $extra['ketepatan_total_done_date_from'] = $mf_done_date_from;
+            elseif ($type === 'divisi')         $extra['divisi_done_date_from']          = $mf_done_date_from;
+            else                                $extra['modal_done_date_from']            = $mf_done_date_from;
+        }
+        if ($mf_done_date_to) {
+            if ($type === 'ketepatan_total')    $extra['ketepatan_total_done_date_to']   = $mf_done_date_to;
+            elseif ($type === 'divisi')         $extra['divisi_done_date_to']             = $mf_done_date_to;
+            else                                $extra['modal_done_date_to']              = $mf_done_date_to;
+        }
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
         $total = $this->dashboard_m->count_detail_modal($type, $extra, $filter);
