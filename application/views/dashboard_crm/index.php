@@ -29,7 +29,7 @@
           <?php foreach ($list_divisi as $div): ?>
           <option value="<?= htmlspecialchars($div['divisi']) ?>"
             <?= $filter['divisi']===$div['divisi']?'selected':'' ?>>
-            <?= htmlspecialchars($div['divisi']) ?>
+            <?= htmlspecialchars($div['label']) ?>
           </option>
           <?php endforeach; ?>
         </select>

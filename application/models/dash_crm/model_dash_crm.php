@@ -354,34 +354,41 @@ class Model_dash_crm extends CI_Model {
             ];
         }
 
-        // 4. Daftar divisi yang direkam dalam database (sesuai dengan requirement)
-        // Divisi: Project, MEP, Finance, Buspro, Legal, Sales, CRM, Estate
-        // Catatan: "Rumah dan Bangunan" adalah kategori di bawah divisi Project, bukan divisi tersendiri
+        // 4. Master list semua divisi aktif beserta label tampilannya
         $valid_divisi = [
-            'Project',
-            'MEP',
-            'Finance',
+            'Aftersales',
             'Buspro',
-            'Legal',
-            'Sales',
-            'CRM',
             'Estate',
+            'Finance',
+            'Legal',
+            'Logistik',
+            'MEP',
+            'Project',
+            'Purchasing',
+            'Sales',
+            'Serah Terima Kunci',
+            'Sosmed',
         ];
 
-        // 5. Susun result dengan SEMUA divisi yang valid, bahkan yang tidak memiliki data
+        $divisi_label_map = [
+            'Buspro' => 'Buspro (Berkas)',
+            'Legal'  => 'Legal (Perizinan/Sertifikat)',
+            'Sales'  => 'Sales/Mkt',
+        ];
+
+        // 5. Susun result — semua divisi selalu tampil, yang kosong tetap muncul dengan nilai 0
         $result = [];
         foreach ($valid_divisi as $divisi_name) {
-            // Jika divisi memiliki data, gunakan data tersebut, jika tidak gunakan 0
             $data = isset($ketepatan_map[$divisi_name]) ? $ketepatan_map[$divisi_name] : [
                 'total'  => 0,
                 'ontime' => 0,
                 'late'   => 0,
             ];
 
-            // Hanya include jika ada filter divisi spesifik, atau include semua jika tidak ada filter
             if (empty($filter['divisi']) || $filter['divisi'] === 'all' || $filter['divisi'] === $divisi_name) {
                 $result[] = [
                     'divisi' => $divisi_name,
+                    'label'  => $divisi_label_map[$divisi_name] ?? $divisi_name,
                     'total'  => $data['total'],
                     'ontime' => $data['ontime'],
                     'late'   => $data['late'],
@@ -548,28 +555,18 @@ class Model_dash_crm extends CI_Model {
         // Pre-load category IDs jika type adalah 'divisi'
         $divisi_category_ids = [];
         if ($type === 'divisi' && !empty($extra['divisi'])) {
-            // Reverse mapping: konversi label kembali ke database value
-            $divisi_reverse_map = [
-                'Project'            => 'Project',
-                'Buspro (Berkas)'    => 'Buspro',
-                'Estate'             => 'Estate',
-                'Finance'            => 'Finance',
-                'Legal'              => 'Legal',
-                'MEP'                => 'MEP',
-                'Sales/Mkt'          => 'Sales',
-                'Sosmed'             => 'CRM',
-                'Aftersales'         => 'Project',
+            $display_to_db = [
+                'Buspro (Berkas)'              => 'Buspro',
+                'Legal (Perizinan/Sertifikat)' => 'Legal',
+                'Sales/Mkt'                    => 'Sales',
             ];
-            $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
-                ? $divisi_reverse_map[$extra['divisi']] 
-                : $extra['divisi'];
-            
-            // Query kategori dari divisi ini
+            $db_divisi = $display_to_db[$extra['divisi']] ?? $extra['divisi'];
+
             $cat_result = $this->db->query(
                 "SELECT id FROM hris.cm_category WHERE divisi = ?",
                 [$db_divisi]
             )->result_array();
-            
+
             $divisi_category_ids = array_column($cat_result, 'id');
         }
 
@@ -789,28 +786,18 @@ class Model_dash_crm extends CI_Model {
         // Pre-load category IDs jika type adalah 'divisi'
         $divisi_category_ids = [];
         if ($type === 'divisi' && !empty($extra['divisi'])) {
-            // Reverse mapping: konversi label kembali ke database value
-            $divisi_reverse_map = [
-                'Project'            => 'Project',
-                'Buspro (Berkas)'    => 'Buspro',
-                'Estate'             => 'Estate',
-                'Finance'            => 'Finance',
-                'Legal'              => 'Legal',
-                'MEP'                => 'MEP',
-                'Sales/Mkt'          => 'Sales',
-                'Sosmed'             => 'CRM',
-                'Aftersales'         => 'Project',
+            $display_to_db = [
+                'Buspro (Berkas)'              => 'Buspro',
+                'Legal (Perizinan/Sertifikat)' => 'Legal',
+                'Sales/Mkt'                    => 'Sales',
             ];
-            $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
-                ? $divisi_reverse_map[$extra['divisi']] 
-                : $extra['divisi'];
-            
-            // Query kategori dari divisi ini
+            $db_divisi = $display_to_db[$extra['divisi']] ?? $extra['divisi'];
+
             $cat_result = $this->db->query(
                 "SELECT id FROM hris.cm_category WHERE divisi = ?",
                 [$db_divisi]
             )->result_array();
-            
+
             $divisi_category_ids = array_column($cat_result, 'id');
         }
 
@@ -1012,11 +999,15 @@ class Model_dash_crm extends CI_Model {
 
     // ============================================================
     // HELPER — Daftar divisi untuk filter dropdown
-    // Mengambil nilai unik kolom `divisi` dari cm_category
-    // CI3 tidak punya select_distinct(), gunakan raw query + GROUP BY
     // ============================================================
     public function get_list_divisi() {
-        $query = $this->db->query("
+        $label_map = [
+            'Buspro' => 'Buspro (Berkas)',
+            'Legal'  => 'Legal (Perizinan/Sertifikat)',
+            'Sales'  => 'Sales/Mkt',
+        ];
+
+        $rows = $this->db->query("
             SELECT divisi
             FROM hris.cm_category
             WHERE divisi IS NOT NULL
@@ -1025,8 +1016,12 @@ class Model_dash_crm extends CI_Model {
               AND is_show = 1
             GROUP BY divisi
             ORDER BY divisi ASC
-        ");
-        return $query->result_array();
+        ")->result_array();
+
+        return array_map(function($row) use ($label_map) {
+            $row['label'] = $label_map[$row['divisi']] ?? $row['divisi'];
+            return $row;
+        }, $rows);
     }
 
     // ============================================================
@@ -1337,29 +1332,19 @@ class Model_dash_crm extends CI_Model {
                 break;
             case 'divisi':
                 if (!empty($extra['divisi'])) {
-                    // Reverse mapping: konversi label kembali ke database value
-                    $divisi_reverse_map = [
-                        'Project'            => 'Project',
-                        'Buspro (Berkas)'    => 'Buspro',
-                        'Estate'             => 'Estate',
-                        'Finance'            => 'Finance',
-                        'Legal'              => 'Legal',
-                        'MEP'                => 'MEP',
-                        'Sales/Mkt'          => 'Sales',
-                        'Sosmed'             => 'CRM',
-                        'Aftersales'         => 'Project',
+                    $display_to_db = [
+                        'Buspro (Berkas)'              => 'Buspro',
+                        'Legal (Perizinan/Sertifikat)' => 'Legal',
+                        'Sales/Mkt'                    => 'Sales',
                     ];
-                    $db_divisi = isset($divisi_reverse_map[$extra['divisi']]) 
-                        ? $divisi_reverse_map[$extra['divisi']] 
-                        : $extra['divisi'];
-                    
-                    // Query kategori dari divisi ini
+                    $db_divisi = $display_to_db[$extra['divisi']] ?? $extra['divisi'];
+
                     $divisi_category_ids = [];
                     $cat_result = $this->db->query(
                         "SELECT id FROM hris.cm_category WHERE divisi = ?",
                         [$db_divisi]
                     )->result_array();
-                    
+
                     $divisi_category_ids = array_column($cat_result, 'id');
                     
                     if (!empty($divisi_category_ids)) {

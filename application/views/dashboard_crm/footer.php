@@ -302,7 +302,7 @@ new Chart('chartEskalasiDonut', {
 new Chart('chartKetepatan', {
   type:'bar',
   data:{
-    labels: ketepatanData.map(d=>d.divisi),
+    labels: ketepatanData.map(d => d.label),
     datasets:[
       { label:'On Time', data:ketepatanData.map(d=>d.ontime), backgroundColor:'#0E9F6E', borderRadius:4 },
       { label:'Late',    data:ketepatanData.map(d=>d.late),  backgroundColor:'#E02424', borderRadius:4 },
@@ -317,9 +317,8 @@ new Chart('chartKetepatan', {
     },
     onClick:(e,els)=>{
       if(els.length) {
-        const datasetIndex = els[0].datasetIndex; // 0 = On Time, 1 = Late
-        const ketepatan_type = datasetIndex === 0 ? 'ontime' : 'late';
-        openModal('divisi', {divisi: ketepatanData[els[0].index].divisi, ketepatan_type: ketepatan_type});
+        const ketepatan_type = els[0].datasetIndex === 0 ? 'ontime' : 'late';
+        openModal('divisi', {divisi: ketepatanData[els[0].index].divisi, ketepatan_type});
       }
     }
   }
@@ -335,7 +334,7 @@ if (klEl) {
     div.onclick = () => openModal('divisi', {divisi: d.divisi});
     div.innerHTML = `
       <div class="status-dot-sm" style="background:${isGreen?'#0E9F6E':'#E02424'}"></div>
-      <div class="status-name" style="font-size:12px">${d.divisi}</div>
+      <div class="status-name" style="font-size:12px">${d.label}</div>
       <div class="flex-grow-1 mx-2">
         <div class="progress" style="height:6px">
           <div class="progress-bar ${isGreen?'bg-success':'bg-danger'}" style="width:${pct}%"></div>

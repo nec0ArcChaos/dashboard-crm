@@ -102,6 +102,7 @@ class Dash_crm extends CI_Controller {
             $pct = $row['total'] > 0 ? round(($row['ontime'] / $row['total']) * 100) : 0;
             $ketepatan[] = [
                 'divisi' => $row['divisi'],
+                'label'  => $row['label'],
                 'total'  => $row['total'],
                 'ontime' => $row['ontime'],
                 'late'   => $row['late'],
@@ -111,10 +112,9 @@ class Dash_crm extends CI_Controller {
             $total_ontime    += (int)$row['ontime'];
             $total_late      += (int)$row['late'];
 
-            // Hanya hitung statistik untuk divisi yang memiliki data (total > 0)
             if ($row['total'] > 0) {
-                if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['divisi']; }
-                if ($pct < $min_ontime_pct) { $min_ontime_pct = $pct; $min_divisi = $row['divisi']; }
+                if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['label']; }
+                if ($pct < $min_ontime_pct) { $min_ontime_pct = $pct; $min_divisi = $row['label']; }
                 if ($pct >= 80) $divisi_atas_80++; else $divisi_bawah_80++;
             }
         }
