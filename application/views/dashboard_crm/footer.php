@@ -50,7 +50,7 @@
         <div id="modalLoading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data...</p></div>
         <div id="modalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
           <!-- Baris 1: Filter Sumber & Status -->
-          <div class="d-flex flex-wrap gap-3 align-items-center">
+          <div class="d-flex flex-wrap gap-3 align-items-center" id="mfSumberStatusRow">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
             <!-- Filter Sumber -->
             <div class="d-flex align-items-center gap-2">
@@ -71,17 +71,17 @@
             </div>
           </div>
           <!-- Garis pemisah -->
-          <hr style="margin:10px 0;border:0;border-top:1px solid #E4E8F0">
+          <hr id="mfSeparator" style="margin:10px 0;border:0;border-top:1px solid #E4E8F0">
           <!-- Baris 2: Filter Tanggal -->
           <div class="d-flex flex-wrap gap-3 align-items-center">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
             <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Dari:</label>
               <input type="date" id="mfDueDateFrom" class="form-control form-control-sm" style="width:140px">
             </div>
             <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
-              <input type="date" id="mfDoneDateFrom" class="form-control form-control-sm" style="width:140px">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sampai:</label>
+              <input type="date" id="mfDueDateTo" class="form-control form-control-sm" style="width:140px">
             </div>
             <button class="btn btn-sm btn-primary" onclick="applyModalDateFilter()">Terapkan</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="resetModalDateFilter()">Reset</button>
@@ -430,13 +430,31 @@ function openModal(type, extra = {}) {
   document.getElementById('mfStatus1').checked   = false;
   document.getElementById('mfStatus2').checked   = false;
   document.getElementById('mfDueDateFrom').value = '';
-  document.getElementById('mfDoneDateFrom').value = '';
+  document.getElementById('mfDueDateTo').value   = '';
+
+  // Types from Ringkasan Verifikasi & Ringkasan Eskalasi — only date filter
+  const _ringkasanTypes = [
+    'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b',
+    'esk_konsumen_sudah', 'esk_konsumen_belum', 'esk_sosmed_sudah', 'esk_sosmed_belum'
+  ];
+  const sumberStatusRow = document.getElementById('mfSumberStatusRow');
+  const separator       = document.getElementById('mfSeparator');
 
   // Configure status labels based on type
   const cfg = _getStatusConfig(type);
-  if (cfg) {
+  if (_ringkasanTypes.includes(type)) {
+    // Ringkasan drilldown: only show date filter, hide sumber & status checkboxes
     modalFilters.style.display = 'block';
-    statusGroup.style.display  = 'flex';
+    sumberStatusRow.classList.add('d-none');
+    separator.classList.add('d-none');
+    statusGroup.classList.add('d-none');
+    _mfStatusVal1 = '';
+    _mfStatusVal2 = '';
+  } else if (cfg) {
+    modalFilters.style.display = 'block';
+    sumberStatusRow.classList.remove('d-none');
+    separator.classList.remove('d-none');
+    statusGroup.classList.remove('d-none');
     document.getElementById('mfStatusLabel').textContent  = cfg.label;
     document.getElementById('mfStatus1Label').textContent = cfg.l1;
     document.getElementById('mfStatus2Label').textContent = cfg.l2;
@@ -445,7 +463,9 @@ function openModal(type, extra = {}) {
   } else if (type === 'status') {
     // Status drilldown: show sumber + date, hide status sub-filter
     modalFilters.style.display = 'block';
-    statusGroup.style.display  = 'none';
+    sumberStatusRow.classList.remove('d-none');
+    separator.classList.remove('d-none');
+    statusGroup.classList.add('d-none');
     _mfStatusVal1 = '';
     _mfStatusVal2 = '';
   } else {
@@ -497,9 +517,9 @@ function updateModalFilters() {
 
 function applyModalDateFilter() {
   _mfDueDateFrom  = document.getElementById('mfDueDateFrom').value;
-  _mfDueDateTo    = _mfDueDateFrom;
-  _mfDoneDateFrom = document.getElementById('mfDoneDateFrom').value;
-  _mfDoneDateTo   = _mfDoneDateFrom;
+  _mfDueDateTo    = document.getElementById('mfDueDateTo').value;
+  _mfDoneDateFrom = '';
+  _mfDoneDateTo   = '';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
   document.getElementById('modalLoading').style.display = 'block';
@@ -509,8 +529,8 @@ function applyModalDateFilter() {
 function resetModalDateFilter() {
   _mfDueDateFrom = _mfDueDateTo = '';
   _mfDoneDateFrom = _mfDoneDateTo = '';
-  document.getElementById('mfDueDateFrom').value  = '';
-  document.getElementById('mfDoneDateFrom').value = '';
+  document.getElementById('mfDueDateFrom').value = '';
+  document.getElementById('mfDueDateTo').value   = '';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
   document.getElementById('modalLoading').style.display = 'block';

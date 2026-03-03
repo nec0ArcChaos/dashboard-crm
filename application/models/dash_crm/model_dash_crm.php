@@ -752,18 +752,12 @@ class Model_dash_crm extends CI_Model {
             }
         }
 
-        // Apply generic due_date / done_date filter (untuk tipe verif_*, esk_*, status)
+        // Apply generic date range filter (untuk tipe verif_*, esk_*, status)
         if (!empty($extra['modal_due_date_from'])) {
-            $this->db->where('t.due_date >=', $extra['modal_due_date_from']);
+            $this->db->where('t.created_at >=', $extra['modal_due_date_from'] . ' 00:00:00');
         }
         if (!empty($extra['modal_due_date_to'])) {
-            $this->db->where('t.due_date <=', $extra['modal_due_date_to']);
-        }
-        if (!empty($extra['modal_done_date_from'])) {
-            $this->db->where('t.done_date >=', $extra['modal_done_date_from'] . ' 00:00:00');
-        }
-        if (!empty($extra['modal_done_date_to'])) {
-            $this->db->where('t.done_date <=', $extra['modal_done_date_to'] . ' 23:59:59');
+            $this->db->where('t.created_at <=', $extra['modal_due_date_to'] . ' 23:59:59');
         }
 
         // Apply global filter
@@ -990,18 +984,12 @@ class Model_dash_crm extends CI_Model {
             }
         }
 
-        // Apply generic due_date / done_date filter (untuk tipe verif_*, esk_*, status)
+        // Apply generic date range filter (untuk tipe verif_*, esk_*, status)
         if (!empty($extra['modal_due_date_from'])) {
-            $this->db->where('t.due_date >=', $extra['modal_due_date_from']);
+            $this->db->where('t.created_at >=', $extra['modal_due_date_from'] . ' 00:00:00');
         }
         if (!empty($extra['modal_due_date_to'])) {
-            $this->db->where('t.due_date <=', $extra['modal_due_date_to']);
-        }
-        if (!empty($extra['modal_done_date_from'])) {
-            $this->db->where('t.done_date >=', $extra['modal_done_date_from'] . ' 00:00:00');
-        }
-        if (!empty($extra['modal_done_date_to'])) {
-            $this->db->where('t.done_date <=', $extra['modal_done_date_to'] . ' 23:59:59');
+            $this->db->where('t.created_at <=', $extra['modal_due_date_to'] . ' 23:59:59');
         }
 
         if (!empty($filter['date_from'])) {
