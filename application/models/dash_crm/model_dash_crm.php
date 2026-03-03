@@ -1395,6 +1395,14 @@ class Model_dash_crm extends CI_Model {
         if (!empty($filter['date_to'])) {
             $this->db->where('t.created_at <=', $filter['date_to'] . ' 23:59:59');
         }
+        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
+            $this->db->where('t.status_konsumen', 1);
+        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
+            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
+        }
+        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
+            $this->db->where('c.divisi', $filter['divisi']);
+        }
 
         $this->db->order_by('t.created_at', 'DESC');
 

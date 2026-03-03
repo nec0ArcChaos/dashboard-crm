@@ -746,6 +746,8 @@ if (document.getElementById('btnExport')) {
       modal_ketepatan: _modalKetepatanFilter,
       modal_verif_sumber: _modalVerifTotalSumber,
       modal_verif_status: _modalVerifTotalStatus,
+      modal_ketepatan_sumber: _modalKetepatanTotalSumber,
+      modal_ketepatan_status: _modalKetepatanTotalStatus,
     });
     window.location.href = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
   });

@@ -707,9 +707,11 @@ class Dash_crm extends CI_Controller {
             $modal_sumber      = $this->input->get('modal_sumber');
             $modal_eskalasi    = $this->input->get('modal_eskalasi');
             $modal_ketepatan   = $this->input->get('modal_ketepatan');
-            $modal_verif_sumber= $this->input->get('modal_verif_sumber');
-            $modal_verif_status= $this->input->get('modal_verif_status');
-            $filter            = $this->_get_filter();
+            $modal_verif_sumber       = $this->input->get('modal_verif_sumber');
+            $modal_verif_status       = $this->input->get('modal_verif_status');
+            $modal_ketepatan_sumber   = $this->input->get('modal_ketepatan_sumber');
+            $modal_ketepatan_status   = $this->input->get('modal_ketepatan_status');
+            $filter                   = $this->_get_filter();
 
             // Jika tipe drilldown_verifikasi, gunakan fungsi khusus yang konsisten
             if ($type === 'drilldown_verifikasi') {
@@ -795,6 +797,12 @@ class Dash_crm extends CI_Controller {
             }
             if ($modal_verif_status && $modal_verif_status !== 'all') {
                 $extra['modal_verif_status'] = $modal_verif_status;
+            }
+            if ($modal_ketepatan_sumber && $modal_ketepatan_sumber !== 'all') {
+                $extra['modal_ketepatan_sumber'] = $modal_ketepatan_sumber;
+            }
+            if ($modal_ketepatan_status && $modal_ketepatan_status !== 'all') {
+                $extra['modal_ketepatan_status'] = $modal_ketepatan_status;
             }
 
             // Ambil data untuk export (tanpa pagination)
