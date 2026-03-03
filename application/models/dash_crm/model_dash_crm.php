@@ -141,25 +141,11 @@ class Model_dash_crm extends CI_Model {
         $this->db->where('t.escalation_at IS NOT NULL', null, false);
         // Status 1,2,3 tidak dihitung sebagai sudah eskalasi
         $this->db->where('t.status NOT IN (1,2,3)', null, false);
-        
-        // Filter tanggal berdasarkan escalation_at
-        if (!empty($filter['date_from'])) {
-            $this->db->where('DATE(t.escalation_at) >=', $filter['date_from']);
-        }
-        if (!empty($filter['date_to'])) {
-            $this->db->where('DATE(t.escalation_at) <=', $filter['date_to']);
-        }
-        
-        // Filter sumber dan divisi
-        if (!empty($filter['sumber']) && $filter['sumber'] === 'konsumen') {
-            $this->db->where('t.status_konsumen', 1);
-        } elseif (!empty($filter['sumber']) && $filter['sumber'] === 'sosmed') {
-            $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-        }
-        if (!empty($filter['divisi']) && $filter['divisi'] !== 'all') {
-            $this->db->where('c.divisi', $filter['divisi']);
-        }
-        
+        // Filter tanggal berdasarkan created_at (konsisten dengan get_total_komplain)
+        $this->_apply_filters(
+            @$filter['date_from'], @$filter['date_to'],
+            @$filter['sumber'], @$filter['divisi']
+        );
         return $this->db->count_all_results();
     }
 
