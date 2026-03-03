@@ -48,67 +48,43 @@
       </div>
       <div class="modal-body" id="modalBody">
         <div id="modalLoading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data...</p></div>
-        <div id="verifTotalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+        <div id="modalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+          <!-- Baris 1: Filter Sumber & Status -->
           <div class="d-flex flex-wrap gap-3 align-items-center">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
-            
             <!-- Filter Sumber -->
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
               <div class="d-flex gap-2">
-                <label style="margin:0"><input type="checkbox" id="verifTotalSemua" checked onchange="toggleVerifTotalAll(this)"> <span style="font-size:12px">Semua</span></label>
-                <label style="margin:0"><input type="checkbox" id="verifTotalKonsumen" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Konsumen</span></label>
-                <label style="margin:0"><input type="checkbox" id="verifTotalSosmed" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Sosmed</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfSemua" checked onchange="toggleModalFilterAll(this)"> <span style="font-size:12px">Semua</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfKonsumen" onchange="updateModalFilters()"> <span style="font-size:12px">Konsumen</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfSosmed" onchange="updateModalFilters()"> <span style="font-size:12px">Sosmed</span></label>
               </div>
             </div>
-
-            <!-- Filter Verifikasi -->
-            <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Verifikasi:</label>
+            <!-- Filter Status (dynamic label) -->
+            <div class="d-flex align-items-center gap-2" id="mfStatusGroup">
+              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap" id="mfStatusLabel">Status:</label>
               <div class="d-flex gap-2">
-                <label style="margin:0"><input type="checkbox" id="verifTotalTerverif" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Sudah</span></label>
-                <label style="margin:0"><input type="checkbox" id="verifTotalBelumVerif" onchange="updateVerifTotalFilters()"> <span style="font-size:12px">Belum</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfStatus1" onchange="updateModalFilters()"> <span style="font-size:12px" id="mfStatus1Label">-</span></label>
+                <label style="margin:0"><input type="checkbox" id="mfStatus2" onchange="updateModalFilters()"> <span style="font-size:12px" id="mfStatus2Label">-</span></label>
               </div>
             </div>
           </div>
-        </div>
-        <div id="ketepatanTotalFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
-          <div class="d-flex flex-wrap gap-3 align-items-center">
-            <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter:</label>
-
-            <!-- Filter Sumber -->
-            <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sumber:</label>
-              <div class="d-flex gap-2">
-                <label style="margin:0"><input type="checkbox" id="ketepatanTotalSemua" checked onchange="toggleKetepatanTotalAll(this)"> <span style="font-size:12px">Semua</span></label>
-                <label style="margin:0"><input type="checkbox" id="ketepatanTotalKonsumen" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Konsumen</span></label>
-                <label style="margin:0"><input type="checkbox" id="ketepatanTotalSosmed" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Sosmed</span></label>
-              </div>
-            </div>
-
-            <!-- Filter Status Ketepatan -->
-            <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Status:</label>
-              <div class="d-flex gap-2">
-                <label style="margin:0"><input type="checkbox" id="ketepatanTotalOnTime" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">On Time</span></label>
-                <label style="margin:0"><input type="checkbox" id="ketepatanTotalLate" onchange="updateKetepatanTotalFilters()"> <span style="font-size:12px">Late</span></label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="divisiDateFilters" style="display:none;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #E4E8F0">
+          <!-- Garis pemisah -->
+          <hr style="margin:10px 0;border:0;border-top:1px solid #E4E8F0">
+          <!-- Baris 2: Filter Tanggal -->
           <div class="d-flex flex-wrap gap-3 align-items-center">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
-              <input type="date" id="divisiDueDateFrom" class="form-control form-control-sm" style="width:140px">
+              <input type="date" id="mfDueDateFrom" class="form-control form-control-sm" style="width:140px">
             </div>
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
-              <input type="date" id="divisiDoneDateFrom" class="form-control form-control-sm" style="width:140px">
+              <input type="date" id="mfDoneDateFrom" class="form-control form-control-sm" style="width:140px">
             </div>
-            <button class="btn btn-sm btn-primary" onclick="applyDivisiDateFilter()">Terapkan</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="resetDivisiDateFilter()">Reset</button>
+            <button class="btn btn-sm btn-primary" onclick="applyModalDateFilter()">Terapkan</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetModalDateFilter()">Reset</button>
           </div>
         </div>
         <div id="modalContent"></div>
@@ -409,65 +385,71 @@ if (slEl) {
 // ============================================================
 const bsModal = new bootstrap.Modal(document.getElementById('detailModal'));
 let _currentModal = {};
-let _modalSumberFilter = 'all'; // Untuk filter sumber di dalam modal (all, konsumen, sosmed)
-let _modalEskalasiFilter = 'all'; // Untuk filter eskalasi di dalam modal (all, sudah, belum)
-let _modalKetepatanFilter = 'all'; // Untuk filter ketepatan di dalam modal (all, ontime, late)
-let _modalVerifTotalSumber = 'all'; // Filter sumber untuk verif_total (all, konsumen, sosmed)
-let _modalVerifTotalStatus = 'all'; // Filter status untuk verif_total (all, verified, unverified)
-let _modalKetepatanTotalSumber = 'all'; // Filter sumber untuk ketepatan_total (all, konsumen, sosmed)
-let _modalKetepatanTotalStatus = 'all'; // Filter status untuk ketepatan_total (all, ontime, late)
-let _modalDivisiDueDateFrom  = ''; // Filter due_date dari untuk divisi drilldown
-let _modalDivisiDueDateTo    = ''; // Filter due_date sampai untuk divisi drilldown
-let _modalDivisiDoneDateFrom = ''; // Filter done_date dari untuk divisi drilldown
-let _modalDivisiDoneDateTo   = ''; // Filter done_date sampai untuk divisi drilldown
+// Unified modal filter state
+let _mfSumber = 'all';
+let _mfStatus = 'all';
+let _mfStatusVal1 = '';  // Value for status checkbox 1 (e.g. 'verified', 'sudah', 'ontime')
+let _mfStatusVal2 = '';  // Value for status checkbox 2 (e.g. 'unverified', 'belum', 'late')
+let _mfDueDateFrom  = '';
+let _mfDueDateTo    = '';
+let _mfDoneDateFrom = '';
+let _mfDoneDateTo   = '';
+
+// Status config per modal type group
+const _mfStatusConfig = {
+  verif:     { label: 'Verifikasi:', l1: 'Sudah', l2: 'Belum', v1: 'verified', v2: 'unverified' },
+  esk:       { label: 'Eskalasi:',   l1: 'Sudah', l2: 'Belum', v1: 'sudah',    v2: 'belum' },
+  ketepatan: { label: 'Status:',     l1: 'On Time', l2: 'Late', v1: 'ontime',  v2: 'late' },
+  divisi:    { label: 'Status:',     l1: 'On Time', l2: 'Late', v1: 'ontime',  v2: 'late' },
+};
+
+function _getStatusConfig(type) {
+  if (type.startsWith('verif'))     return _mfStatusConfig.verif;
+  if (type.startsWith('esk'))       return _mfStatusConfig.esk;
+  if (type === 'ketepatan_total')   return _mfStatusConfig.ketepatan;
+  if (type === 'divisi')            return _mfStatusConfig.divisi;
+  return null; // 'status' type — no sub-status filter
+}
 
 function openModal(type, extra = {}) {
   _currentModal = { type, extra };
-  _modalSumberFilter = 'all'; // Reset filter sumber
-  _modalEskalasiFilter = 'all'; // Reset filter eskalasi
-  _modalKetepatanFilter = extra.ketepatan_type || 'all'; // Set filter ketepatan dari parameter extra
-  _modalVerifTotalSumber = 'all'; // Reset filter sumber verif_total
-  _modalVerifTotalStatus = 'all'; // Reset filter status verif_total
-  _modalKetepatanTotalSumber = 'all'; // Reset filter sumber ketepatan_total
-  _modalKetepatanTotalStatus = 'all'; // Reset filter status ketepatan_total
 
-  // Tampilkan/sembunyikan filter berdasarkan tipe modal
-  const verifTotalFilters = document.getElementById('verifTotalFilters');
-  const ketepatanTotalFilters = document.getElementById('ketepatanTotalFilters');
-  const divisiDateFilters = document.getElementById('divisiDateFilters');
+  // Reset unified filter state
+  _mfSumber = 'all';
+  _mfStatus = 'all';
+  _mfDueDateFrom = _mfDueDateTo = '';
+  _mfDoneDateFrom = _mfDoneDateTo = '';
 
-  if (type === 'verif_total') {
-    verifTotalFilters.style.display = 'block';
-    ketepatanTotalFilters.style.display = 'none';
-    divisiDateFilters.style.display = 'none';
-    // Reset checkbox
-    document.getElementById('verifTotalSemua').checked = true;
-    document.getElementById('verifTotalKonsumen').checked = false;
-    document.getElementById('verifTotalSosmed').checked = false;
-    document.getElementById('verifTotalTerverif').checked = false;
-    document.getElementById('verifTotalBelumVerif').checked = false;
-  } else if (type === 'ketepatan_total') {
-    ketepatanTotalFilters.style.display = 'block';
-    verifTotalFilters.style.display = 'none';
-    divisiDateFilters.style.display = 'none';
-    // Reset checkbox
-    document.getElementById('ketepatanTotalSemua').checked = true;
-    document.getElementById('ketepatanTotalKonsumen').checked = false;
-    document.getElementById('ketepatanTotalSosmed').checked = false;
-    document.getElementById('ketepatanTotalOnTime').checked = false;
-    document.getElementById('ketepatanTotalLate').checked = false;
-  } else if (type === 'divisi') {
-    divisiDateFilters.style.display = 'block';
-    verifTotalFilters.style.display = 'none';
-    ketepatanTotalFilters.style.display = 'none';
-    // Reset date inputs & state
-    document.getElementById('divisiDueDateFrom').value  = '';
-    document.getElementById('divisiDoneDateFrom').value = '';
-    _modalDivisiDueDateFrom = _modalDivisiDueDateTo = _modalDivisiDoneDateFrom = _modalDivisiDoneDateTo = '';
+  const modalFilters = document.getElementById('modalFilters');
+  const statusGroup  = document.getElementById('mfStatusGroup');
+
+  // Reset all checkboxes & date inputs
+  document.getElementById('mfSemua').checked    = true;
+  document.getElementById('mfKonsumen').checked  = false;
+  document.getElementById('mfSosmed').checked    = false;
+  document.getElementById('mfStatus1').checked   = false;
+  document.getElementById('mfStatus2').checked   = false;
+  document.getElementById('mfDueDateFrom').value = '';
+  document.getElementById('mfDoneDateFrom').value = '';
+
+  // Configure status labels based on type
+  const cfg = _getStatusConfig(type);
+  if (cfg) {
+    modalFilters.style.display = 'block';
+    statusGroup.style.display  = 'flex';
+    document.getElementById('mfStatusLabel').textContent  = cfg.label;
+    document.getElementById('mfStatus1Label').textContent = cfg.l1;
+    document.getElementById('mfStatus2Label').textContent = cfg.l2;
+    _mfStatusVal1 = cfg.v1;
+    _mfStatusVal2 = cfg.v2;
+  } else if (type === 'status') {
+    // Status drilldown: show sumber + date, hide status sub-filter
+    modalFilters.style.display = 'block';
+    statusGroup.style.display  = 'none';
+    _mfStatusVal1 = '';
+    _mfStatusVal2 = '';
   } else {
-    verifTotalFilters.style.display = 'none';
-    ketepatanTotalFilters.style.display = 'none';
-    divisiDateFilters.style.display = 'none';
+    modalFilters.style.display = 'none';
   }
 
   document.getElementById('modalTitle').textContent = 'Memuat data...';
@@ -478,101 +460,60 @@ function openModal(type, extra = {}) {
   loadModalPage(1);
 }
 
-function toggleVerifTotalAll(checkbox) {
+function toggleModalFilterAll(checkbox) {
   if (checkbox.checked) {
-    // Jika "Semua" di-check, uncheck yang lain
-    document.getElementById('verifTotalKonsumen').checked = false;
-    document.getElementById('verifTotalSosmed').checked = false;
-    document.getElementById('verifTotalTerverif').checked = false;
-    document.getElementById('verifTotalBelumVerif').checked = false;
-    _modalVerifTotalSumber = 'all';
-    _modalVerifTotalStatus = 'all';
+    document.getElementById('mfKonsumen').checked = false;
+    document.getElementById('mfSosmed').checked   = false;
+    document.getElementById('mfStatus1').checked  = false;
+    document.getElementById('mfStatus2').checked  = false;
+    _mfSumber = 'all';
+    _mfStatus = 'all';
   }
   loadModalPage(1);
 }
 
-function updateVerifTotalFilters() {
-  // Uncheck "Semua" jika ada filter lain yang di-check
-  const konsumen = document.getElementById('verifTotalKonsumen').checked;
-  const sosmed = document.getElementById('verifTotalSosmed').checked;
-  const terverif = document.getElementById('verifTotalTerverif').checked;
-  const belumVerif = document.getElementById('verifTotalBelumVerif').checked;
+function updateModalFilters() {
+  const konsumen = document.getElementById('mfKonsumen').checked;
+  const sosmed   = document.getElementById('mfSosmed').checked;
+  const s1       = document.getElementById('mfStatus1').checked;
+  const s2       = document.getElementById('mfStatus2').checked;
 
-  if (konsumen || sosmed || terverif || belumVerif) {
-    document.getElementById('verifTotalSemua').checked = false;
+  if (konsumen || sosmed || s1 || s2) {
+    document.getElementById('mfSemua').checked = false;
   }
 
-  // Set sumber filter
-  if (konsumen && !sosmed) {
-    _modalVerifTotalSumber = 'konsumen';
-  } else if (sosmed && !konsumen) {
-    _modalVerifTotalSumber = 'sosmed';
-  } else if (konsumen && sosmed) {
-    _modalVerifTotalSumber = 'all';
-  } else {
-    _modalVerifTotalSumber = 'all';
-  }
+  // Sumber
+  if (konsumen && !sosmed) _mfSumber = 'konsumen';
+  else if (sosmed && !konsumen) _mfSumber = 'sosmed';
+  else _mfSumber = 'all';
 
-  // Set status verifikasi filter
-  if (terverif && !belumVerif) {
-    _modalVerifTotalStatus = 'verified';
-  } else if (belumVerif && !terverif) {
-    _modalVerifTotalStatus = 'unverified';
-  } else if (terverif && belumVerif) {
-    _modalVerifTotalStatus = 'all';
-  } else {
-    _modalVerifTotalStatus = 'all';
-  }
+  // Status
+  if (s1 && !s2) _mfStatus = _mfStatusVal1;
+  else if (s2 && !s1) _mfStatus = _mfStatusVal2;
+  else _mfStatus = 'all';
 
   loadModalPage(1);
 }
 
-function toggleKetepatanTotalAll(checkbox) {
-  if (checkbox.checked) {
-    // Jika "Semua" di-check, uncheck yang lain
-    document.getElementById('ketepatanTotalKonsumen').checked = false;
-    document.getElementById('ketepatanTotalSosmed').checked = false;
-    document.getElementById('ketepatanTotalOnTime').checked = false;
-    document.getElementById('ketepatanTotalLate').checked = false;
-    _modalKetepatanTotalSumber = 'all';
-    _modalKetepatanTotalStatus = 'all';
-  }
+function applyModalDateFilter() {
+  _mfDueDateFrom  = document.getElementById('mfDueDateFrom').value;
+  _mfDueDateTo    = _mfDueDateFrom;
+  _mfDoneDateFrom = document.getElementById('mfDoneDateFrom').value;
+  _mfDoneDateTo   = _mfDoneDateFrom;
+  document.getElementById('modalContent').innerHTML = '';
+  document.getElementById('modalPagination').innerHTML = '';
+  document.getElementById('modalLoading').style.display = 'block';
   loadModalPage(1);
 }
 
-function updateKetepatanTotalFilters() {
-  // Uncheck "Semua" jika ada filter lain yang di-check
-  const konsumen = document.getElementById('ketepatanTotalKonsumen').checked;
-  const sosmed = document.getElementById('ketepatanTotalSosmed').checked;
-  const ontime = document.getElementById('ketepatanTotalOnTime').checked;
-  const late = document.getElementById('ketepatanTotalLate').checked;
-
-  if (konsumen || sosmed || ontime || late) {
-    document.getElementById('ketepatanTotalSemua').checked = false;
-  }
-
-  // Set sumber filter
-  if (konsumen && !sosmed) {
-    _modalKetepatanTotalSumber = 'konsumen';
-  } else if (sosmed && !konsumen) {
-    _modalKetepatanTotalSumber = 'sosmed';
-  } else if (konsumen && sosmed) {
-    _modalKetepatanTotalSumber = 'all';
-  } else {
-    _modalKetepatanTotalSumber = 'all';
-  }
-
-  // Set status ketepatan filter
-  if (ontime && !late) {
-    _modalKetepatanTotalStatus = 'ontime';
-  } else if (late && !ontime) {
-    _modalKetepatanTotalStatus = 'late';
-  } else if (ontime && late) {
-    _modalKetepatanTotalStatus = 'all';
-  } else {
-    _modalKetepatanTotalStatus = 'all';
-  }
-
+function resetModalDateFilter() {
+  _mfDueDateFrom = _mfDueDateTo = '';
+  _mfDoneDateFrom = _mfDoneDateTo = '';
+  document.getElementById('mfDueDateFrom').value  = '';
+  document.getElementById('mfDoneDateFrom').value = '';
+  document.getElementById('modalContent').innerHTML = '';
+  document.getElementById('modalPagination').innerHTML = '';
+  document.getElementById('modalLoading').style.display = 'block';
   loadModalPage(1);
 }
 
@@ -586,17 +527,12 @@ function loadModalPage(page) {
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
     divisi_filter: filterGlobal.divisi,
-    modal_sumber: _modalSumberFilter, // Filter sumber di dalam modal
-    modal_eskalasi: _modalEskalasiFilter, // Filter eskalasi di dalam modal
-    modal_ketepatan: _modalKetepatanFilter, // Filter ketepatan (all, ontime, late)
-    modal_verif_sumber: _modalVerifTotalSumber, // Filter sumber untuk verif_total
-    modal_verif_status: _modalVerifTotalStatus, // Filter status untuk verif_total
-    modal_ketepatan_sumber: _modalKetepatanTotalSumber, // Filter sumber untuk ketepatan_total
-    modal_ketepatan_status: _modalKetepatanTotalStatus, // Filter status untuk ketepatan_total
-    divisi_due_date_from:  _modalDivisiDueDateFrom,  // Filter due_date dari untuk divisi
-    divisi_due_date_to:    _modalDivisiDueDateTo,    // Filter due_date sampai untuk divisi
-    divisi_done_date_from: _modalDivisiDoneDateFrom, // Filter done_date dari untuk divisi
-    divisi_done_date_to:   _modalDivisiDoneDateTo,   // Filter done_date sampai untuk divisi
+    mf_sumber:         _mfSumber,
+    mf_status:         _mfStatus,
+    mf_due_date_from:  _mfDueDateFrom,
+    mf_due_date_to:    _mfDueDateTo,
+    mf_done_date_from: _mfDoneDateFrom,
+    mf_done_date_to:   _mfDoneDateTo,
   });
 
   const fetchUrl = BASE_URL + 'dash_crm/modal_detail?' + params.toString();
@@ -645,58 +581,25 @@ function loadModalPage(page) {
         return;
       }
 
-      // Render filter buttons untuk verifikasi modal (jika needed)
-      const isVerifModal = ['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type);
-      const needsSumberFilter = ['verif_terverifikasi', 'verif_belum'].includes(_currentModal.type);
-
-      // Render filter buttons untuk eskalasi gabungan
-      const isEskalasiGabungan = _currentModal.type === 'esk_gabungan';
-      const needsEskalasiFilter = isEskalasiGabungan;
-
-      let filterButtonsHtml = '';
-      if (needsSumberFilter) {
-        filterButtonsHtml = `
-          <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
-            <button class="btn btn-sm ${_modalSumberFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('all')">Semua Sumber</button>
-            <button class="btn btn-sm ${_modalSumberFilter === 'konsumen' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('konsumen')">Konsumen</button>
-            <button class="btn btn-sm ${_modalSumberFilter === 'sosmed' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberFilter('sosmed')">Sosmed</button>
-          </div>
-        `;
-      } else if (needsEskalasiFilter) {
-        filterButtonsHtml = `
-          <div class="modal-filter-buttons mb-3" style="display:flex; gap:8px; margin-bottom:12px;">
-            <button class="btn btn-sm ${_modalEskalasiFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('all')">Semua Data</button>
-            <button class="btn btn-sm ${_modalEskalasiFilter === 'sudah' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('sudah')">Sudah Eskalasi</button>
-            <button class="btn btn-sm ${_modalEskalasiFilter === 'belum' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setSumberEskalasiFilter('belum')">Belum Eskalasi</button>
-          </div>
-        `;
-      }
-
       // Render tabel
       const jenisHeader = ['divisi', 'ketepatan_total'].includes(_currentModal.type) ? 'Kategori' : 'Jenis';
-      const isDivisiModal = _currentModal.type === 'divisi';
-      const dueDateDoneHeader = isDivisiModal
-        ? '<th>Due Date</th><th>Done Date</th>'
-        : '';
 
-      let html = filterButtonsHtml + `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
+      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
         <div class="table-responsive">
         <table class="table table-sm modal-table align-middle">
           <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th>${dueDateDoneHeader}<th>Status</th><th>Waktu</th>
+            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th><th>Due Date</th><th>Done Date</th><th>Status</th><th>Waktu</th>
           </tr></thead><tbody>`;
 
       res.data.forEach(row => {
         const waktuClass = row.waktu_status === 'On Time' ? 'ontime' : row.waktu_status === 'Late' ? 'late' : 'working';
-        const dueDateDoneCells = isDivisiModal
-          ? `<td><small>${row.due_date || '-'}</small></td><td><small>${row.done_date || '-'}</small></td>`
-          : '';
         html += `<tr>
           <td><code style="font-size:11px">${row.id_task}</code></td>
           <td>${row.konsumen || '-'}</td>
           <td><small>${row.lokasi || '-'}</small></td>
           <td><small>${row.jenis || '-'}</small></td>
-          ${dueDateDoneCells}
+          <td><small>${row.due_date || '-'}</small></td>
+          <td><small>${row.done_date || '-'}</small></td>
           <td><span class="badge-status badge-${getBadgeClass(row.status_id)}">${row.status || '-'}</span></td>
           <td><span class="badge-status badge-${waktuClass}">${row.waktu_status}</span></td>
         </tr>`;
@@ -705,6 +608,7 @@ function loadModalPage(page) {
       document.getElementById('modalContent').innerHTML = html;
 
       // Show drilldown button untuk modal verifikasi
+      const isVerifModal = ['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type);
       const drilldownBtn = document.getElementById('btnDrilldown');
       if (isVerifModal) {
         drilldownBtn.style.display = 'inline-block';
@@ -720,18 +624,6 @@ function loadModalPage(page) {
       document.getElementById('modalLoading').style.display = 'none';
       document.getElementById('modalContent').innerHTML = '<p class="text-danger">Koneksi error: ' + err.message + '</p>';
     });
-}
-
-// Function untuk set sumber filter dan reload modal
-function setSumberFilter(sumber) {
-  _modalSumberFilter = sumber;
-  loadModalPage(1); // Reload halaman 1 dengan filter baru
-}
-
-// Function untuk set eskalasi filter dan reload modal
-function setSumberEskalasiFilter(eskalasi) {
-  _modalEskalasiFilter = eskalasi;
-  loadModalPage(1); // Reload halaman 1 dengan filter baru
 }
 
 function exportDrilldownData() {
@@ -785,17 +677,12 @@ if (document.getElementById('btnExport')) {
       date_to:   filterGlobal.date_to,
       sumber:    filterGlobal.sumber,
       divisi_filter: filterGlobal.divisi,
-      modal_sumber: _modalSumberFilter,
-      modal_eskalasi: _modalEskalasiFilter,
-      modal_ketepatan: _modalKetepatanFilter,
-      modal_verif_sumber: _modalVerifTotalSumber,
-      modal_verif_status: _modalVerifTotalStatus,
-      modal_ketepatan_sumber: _modalKetepatanTotalSumber,
-      modal_ketepatan_status: _modalKetepatanTotalStatus,
-      divisi_due_date_from:  _modalDivisiDueDateFrom,
-      divisi_due_date_to:    _modalDivisiDueDateTo,
-      divisi_done_date_from: _modalDivisiDoneDateFrom,
-      divisi_done_date_to:   _modalDivisiDoneDateTo,
+      mf_sumber:         _mfSumber,
+      mf_status:         _mfStatus,
+      mf_due_date_from:  _mfDueDateFrom,
+      mf_due_date_to:    _mfDueDateTo,
+      mf_done_date_from: _mfDoneDateFrom,
+      mf_done_date_to:   _mfDoneDateTo,
     });
     window.location.href = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
   });
@@ -1059,27 +946,6 @@ function resetKetepatanDateFilter() {
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
   loadKetepatanGlobalPage(1);
-}
-
-function applyDivisiDateFilter() {
-  _modalDivisiDueDateFrom  = document.getElementById('divisiDueDateFrom').value;
-  _modalDivisiDueDateTo    = _modalDivisiDueDateFrom; // exact date
-  _modalDivisiDoneDateFrom = document.getElementById('divisiDoneDateFrom').value;
-  _modalDivisiDoneDateTo   = _modalDivisiDoneDateFrom; // exact date
-  document.getElementById('modalContent').innerHTML = '';
-  document.getElementById('modalPagination').innerHTML = '';
-  document.getElementById('modalLoading').style.display = 'block';
-  loadModalPage(1);
-}
-
-function resetDivisiDateFilter() {
-  _modalDivisiDueDateFrom = _modalDivisiDueDateTo = _modalDivisiDoneDateFrom = _modalDivisiDoneDateTo = '';
-  document.getElementById('divisiDueDateFrom').value  = '';
-  document.getElementById('divisiDoneDateFrom').value = '';
-  document.getElementById('modalContent').innerHTML = '';
-  document.getElementById('modalPagination').innerHTML = '';
-  document.getElementById('modalLoading').style.display = 'block';
-  loadModalPage(1);
 }
 
 function renderKetepatanGlobalPagination(total, per_page, current_page) {

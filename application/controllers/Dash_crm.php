@@ -252,60 +252,23 @@ class Dash_crm extends CI_Controller {
         $offset    = ($page - 1) * $per_page;
         $filter    = $this->_get_filter();
 
-        // Get modal_sumber filter untuk verifikasi modal
-        $modal_sumber = $this->input->get('modal_sumber');
-
-        // Get modal_eskalasi filter untuk eskalasi gabungan modal
-        $modal_eskalasi = $this->input->get('modal_eskalasi');
-
-        // Get modal_ketepatan filter untuk ketepatan waktu modal
-        $modal_ketepatan = $this->input->get('modal_ketepatan');
-
-        // Get modal_verif_sumber dan modal_verif_status untuk verif_total
-        $modal_verif_sumber = $this->input->get('modal_verif_sumber');
-        $modal_verif_status = $this->input->get('modal_verif_status');
-
-        // Get modal_ketepatan_sumber dan modal_ketepatan_status untuk ketepatan_total
-        $modal_ketepatan_sumber = $this->input->get('modal_ketepatan_sumber');
-        $modal_ketepatan_status = $this->input->get('modal_ketepatan_status');
-
-        // Get divisi date filter params
-        $divisi_due_date_from  = $this->input->get('divisi_due_date_from')  ?: '';
-        $divisi_due_date_to    = $this->input->get('divisi_due_date_to')    ?: '';
-        $divisi_done_date_from = $this->input->get('divisi_done_date_from') ?: '';
-        $divisi_done_date_to   = $this->input->get('divisi_done_date_to')   ?: '';
+        // Get unified modal filter params
+        $mf_sumber         = $this->input->get('mf_sumber')         ?: 'all';
+        $mf_status         = $this->input->get('mf_status')         ?: 'all';
+        $mf_due_date_from  = $this->input->get('mf_due_date_from')  ?: '';
+        $mf_due_date_to    = $this->input->get('mf_due_date_to')    ?: '';
+        $mf_done_date_from = $this->input->get('mf_done_date_from') ?: '';
+        $mf_done_date_to   = $this->input->get('mf_done_date_to')   ?: '';
 
         $extra = [];
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
-        if ($modal_sumber && $modal_sumber !== 'all') {
-            $extra['modal_sumber'] = $modal_sumber;
-        }
-        if ($modal_eskalasi && $modal_eskalasi !== 'all') {
-            $extra['modal_eskalasi'] = $modal_eskalasi;
-        }
-        if ($modal_ketepatan && $modal_ketepatan !== 'all') {
-            $extra['modal_ketepatan'] = $modal_ketepatan;
-        }
-        if ($modal_verif_sumber && $modal_verif_sumber !== 'all') {
-            $extra['modal_verif_sumber'] = $modal_verif_sumber;
-        }
-        if ($modal_verif_status && $modal_verif_status !== 'all') {
-            $extra['modal_verif_status'] = $modal_verif_status;
-        }
-        if ($modal_ketepatan_sumber && $modal_ketepatan_sumber !== 'all') {
-            $extra['modal_ketepatan_sumber'] = $modal_ketepatan_sumber;
-        }
-        if ($modal_ketepatan_status && $modal_ketepatan_status !== 'all') {
-            $extra['modal_ketepatan_status'] = $modal_ketepatan_status;
-        }
-        // Pass divisi date filters hanya untuk type='divisi'
-        if ($type === 'divisi') {
-            if ($divisi_due_date_from)  $extra['divisi_due_date_from']  = $divisi_due_date_from;
-            if ($divisi_due_date_to)    $extra['divisi_due_date_to']    = $divisi_due_date_to;
-            if ($divisi_done_date_from) $extra['divisi_done_date_from'] = $divisi_done_date_from;
-            if ($divisi_done_date_to)   $extra['divisi_done_date_to']   = $divisi_done_date_to;
-        }
+        if ($mf_sumber !== 'all')    $extra['mf_sumber']         = $mf_sumber;
+        if ($mf_status !== 'all')    $extra['mf_status']         = $mf_status;
+        if ($mf_due_date_from)       $extra['mf_due_date_from']  = $mf_due_date_from;
+        if ($mf_due_date_to)         $extra['mf_due_date_to']    = $mf_due_date_to;
+        if ($mf_done_date_from)      $extra['mf_done_date_from'] = $mf_done_date_from;
+        if ($mf_done_date_to)        $extra['mf_done_date_to']   = $mf_done_date_to;
 
         $rows  = $this->dashboard_m->get_detail_modal($type, $extra, $filter, $per_page, $offset);
         $total = $this->dashboard_m->count_detail_modal($type, $extra, $filter);
@@ -325,12 +288,8 @@ class Dash_crm extends CI_Controller {
                 }
             }
 
-            $due_date_fmt  = null;
-            $done_date_fmt = null;
-            if ($type === 'divisi') {
-                $due_date_fmt  = (!empty($row['due_date'])  && $row['due_date']  !== '0000-00-00')             ? date('d-m-Y', strtotime($row['due_date']))            : '-';
-                $done_date_fmt = (!empty($row['done_date']) && $row['done_date'] !== '0000-00-00 00:00:00')    ? date('d-m-Y H:i', strtotime($row['done_date']))       : '-';
-            }
+            $due_date_fmt  = (!empty($row['due_date'])  && $row['due_date']  !== '0000-00-00')          ? date('d-m-Y', strtotime($row['due_date']))      : '-';
+            $done_date_fmt = (!empty($row['done_date']) && $row['done_date'] !== '0000-00-00 00:00:00') ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-';
 
             $data[] = [
                 'id_task'      => $row['id_task'],
@@ -726,14 +685,13 @@ class Dash_crm extends CI_Controller {
             $type              = $this->input->get('type');
             $status_id         = $this->input->get('status_id');
             $divisi            = $this->input->get('divisi');
-            $modal_sumber      = $this->input->get('modal_sumber');
-            $modal_eskalasi    = $this->input->get('modal_eskalasi');
-            $modal_ketepatan   = $this->input->get('modal_ketepatan');
-            $modal_verif_sumber       = $this->input->get('modal_verif_sumber');
-            $modal_verif_status       = $this->input->get('modal_verif_status');
-            $modal_ketepatan_sumber   = $this->input->get('modal_ketepatan_sumber');
-            $modal_ketepatan_status   = $this->input->get('modal_ketepatan_status');
-            $filter                   = $this->_get_filter();
+            $mf_sumber         = $this->input->get('mf_sumber')         ?: 'all';
+            $mf_status         = $this->input->get('mf_status')         ?: 'all';
+            $mf_due_date_from  = $this->input->get('mf_due_date_from')  ?: '';
+            $mf_due_date_to    = $this->input->get('mf_due_date_to')    ?: '';
+            $mf_done_date_from = $this->input->get('mf_done_date_from') ?: '';
+            $mf_done_date_to   = $this->input->get('mf_done_date_to')   ?: '';
+            $filter            = $this->_get_filter();
 
             // Jika tipe drilldown_verifikasi, gunakan fungsi khusus yang konsisten
             if ($type === 'drilldown_verifikasi') {
@@ -808,24 +766,12 @@ class Dash_crm extends CI_Controller {
             $extra = [];
             if ($status_id) $extra['status_id'] = $status_id;
             if ($divisi)    $extra['divisi']     = $divisi;
-            if ($modal_sumber && $modal_sumber !== 'all') {
-                $extra['modal_sumber'] = $modal_sumber;
-            }
-            if ($modal_eskalasi && $modal_eskalasi !== 'all') {
-                $extra['modal_eskalasi'] = $modal_eskalasi;
-            }
-            if ($modal_verif_sumber && $modal_verif_sumber !== 'all') {
-                $extra['modal_verif_sumber'] = $modal_verif_sumber;
-            }
-            if ($modal_verif_status && $modal_verif_status !== 'all') {
-                $extra['modal_verif_status'] = $modal_verif_status;
-            }
-            if ($modal_ketepatan_sumber && $modal_ketepatan_sumber !== 'all') {
-                $extra['modal_ketepatan_sumber'] = $modal_ketepatan_sumber;
-            }
-            if ($modal_ketepatan_status && $modal_ketepatan_status !== 'all') {
-                $extra['modal_ketepatan_status'] = $modal_ketepatan_status;
-            }
+            if ($mf_sumber !== 'all')    $extra['mf_sumber']         = $mf_sumber;
+            if ($mf_status !== 'all')    $extra['mf_status']         = $mf_status;
+            if ($mf_due_date_from)       $extra['mf_due_date_from']  = $mf_due_date_from;
+            if ($mf_due_date_to)         $extra['mf_due_date_to']    = $mf_due_date_to;
+            if ($mf_done_date_from)      $extra['mf_done_date_from'] = $mf_done_date_from;
+            if ($mf_done_date_to)        $extra['mf_done_date_to']   = $mf_done_date_to;
 
             // Ambil data untuk export (tanpa pagination)
             $rows = $this->dashboard_m->get_detail_modal_export($type, $extra, $filter);
