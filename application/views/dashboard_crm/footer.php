@@ -557,18 +557,15 @@ function loadModalPage(page) {
   });
 
   const fetchUrl = BASE_URL + 'dash_crm/modal_detail?' + params.toString();
-  console.log('Loading modal from:', fetchUrl);
 
-  fetch(fetchUrl)
+  fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => {
-      console.log('Modal Response status:', r.status);
       if (!r.ok) {
         throw new Error(`HTTP ${r.status}: ${r.statusText}`);
       }
       return r.json();
     })
     .then(res => {
-      console.log('Modal Response:', res);
       document.getElementById('modalLoading').style.display = 'none';
       if (!res.success) {
         document.getElementById('modalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
@@ -731,15 +728,13 @@ function loadKetepatanGlobalPage(page) {
   });
 
   const fetchUrl = BASE_URL + 'dash_crm/ketepatan_global?' + params.toString();
-  console.log('Loading ketepatan global from:', fetchUrl);
 
-  fetch(fetchUrl)
+  fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
       return r.json();
     })
     .then(res => {
-      console.log('Ketepatan Global Response:', res);
       document.getElementById('ketepatanGlobalLoading').style.display = 'none';
       
       if (!res.success) {
@@ -890,7 +885,7 @@ function loadRatingDrilldownPage(page) {
   });
   if (_ratingBintangFilter !== null) params.set('bintang', _ratingBintangFilter);
 
-  fetch(BASE_URL + 'dash_crm/rating_drilldown?' + params.toString())
+  fetch(BASE_URL + 'dash_crm/rating_drilldown?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(res => {
       document.getElementById('ratingDrilldownLoading').style.display = 'none';

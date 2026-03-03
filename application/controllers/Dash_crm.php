@@ -240,7 +240,8 @@ class Dash_crm extends CI_Controller {
     // AJAX — Modal Detail Komplain
     // ============================================================
     public function modal_detail() {
-        // Set no-cache headers
+        $this->_guard_ajax();
+
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
 
@@ -361,7 +362,8 @@ class Dash_crm extends CI_Controller {
     // AJAX — Ketepatan Waktu Global (detail semua divisi)
     // ============================================================
     public function ketepatan_global() {
-        // Set no-cache headers
+        $this->_guard_ajax();
+
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
 
@@ -452,6 +454,8 @@ class Dash_crm extends CI_Controller {
     // EXPORT — Export ketepatan waktu ke CSV
     // ============================================================
     public function export_ketepatan_data() {
+        $this->_guard_referer();
+
         try {
             $ketepatan      = $this->input->get('ketepatan')      ?: 'all';
             $filter         = $this->_get_filter();
@@ -615,8 +619,9 @@ class Dash_crm extends CI_Controller {
     // AJAX — Drilldown Verifikasi (tabel detail komplain)
     // ============================================================
     public function drilldown_verifikasi() {
+        $this->_guard_ajax();
+
         try {
-            // Set no-cache headers
             header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             header('Pragma: no-cache');
 
@@ -663,6 +668,8 @@ class Dash_crm extends CI_Controller {
     // AJAX — Drilldown Rating Konsumen
     // ============================================================
     public function rating_drilldown() {
+        $this->_guard_ajax();
+
         try {
             header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             header('Pragma: no-cache');
@@ -721,6 +728,8 @@ class Dash_crm extends CI_Controller {
     // EXPORT — Export modal detail ke CSV
     // ============================================================
     public function export_modal_data() {
+        $this->_guard_referer();
+
         try {
             $type              = $this->input->get('type');
             $status_id         = $this->input->get('status_id');
@@ -953,9 +962,28 @@ class Dash_crm extends CI_Controller {
         }
     }
 
-    // ============================================================
-    // Helper: baca filter dari GET request
-    // ============================================================
+    // --------------------------------------------------------
+    // Guards — dipanggil di awal setiap endpoint sensitif
+    // --------------------------------------------------------
+
+    private function _guard_ajax() {
+        if ($this->input->is_ajax_request()) return;
+
+        $this->output
+            ->set_status_header(403)
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['error' => 'Forbidden']));
+        exit;
+    }
+
+    private function _guard_referer() {
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        if (strpos($referer, base_url()) === 0) return;
+
+        $this->output->set_status_header(403);
+        exit;
+    }
+
     private function _get_filter() {
         $date_from = $this->input->get('date_from') ?: '2025-01-01';
         $date_to   = $this->input->get('date_to')   ?: date('Y-m-d');
