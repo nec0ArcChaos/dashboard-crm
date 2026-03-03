@@ -92,7 +92,6 @@
       </div>
       <div class="modal-footer border-top">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-        <button type="button" class="btn btn-sm btn-info" id="btnDrilldown" style="display:none">Lihat Detail Tabel</button>
         <button type="button" class="btn btn-sm btn-primary" id="btnExport">Export Excel</button>
       </div>
     </div>
@@ -627,15 +626,6 @@ function loadModalPage(page) {
       html += '</tbody></table></div>';
       document.getElementById('modalContent').innerHTML = html;
 
-      // Show drilldown button untuk modal verifikasi
-      const isVerifModal = ['verif_terverifikasi', 'verif_belum', 'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b'].includes(_currentModal.type);
-      const drilldownBtn = document.getElementById('btnDrilldown');
-      if (isVerifModal) {
-        drilldownBtn.style.display = 'inline-block';
-      } else {
-        drilldownBtn.style.display = 'none';
-      }
-
       // Paginasi
       renderPagination(res.total, res.per_page, page);
     })
@@ -644,20 +634,6 @@ function loadModalPage(page) {
       document.getElementById('modalLoading').style.display = 'none';
       document.getElementById('modalContent').innerHTML = '<p class="text-danger">Koneksi error: ' + err.message + '</p>';
     });
-}
-
-function exportDrilldownData() {
-  const params = new URLSearchParams({
-    type:      'drilldown_verifikasi', // Gunakan tipe khusus untuk drilldown yang konsisten
-    date_from: filterGlobal.date_from,
-    date_to:   filterGlobal.date_to,
-    sumber:    filterGlobal.sumber,
-    divisi:    filterGlobal.divisi, // Gunakan 'divisi' bukan 'divisi_filter'
-    modal_sumber: _drilldownSumberFilter, // Jika ada filter sumber di drilldown
-  });
-  const exportUrl = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
-  console.log('Opening drilldown export URL:', exportUrl);
-  window.location.href = exportUrl;
 }
 
 function getBadgeClass(status_id) {
@@ -706,146 +682,6 @@ if (document.getElementById('btnExport')) {
     });
     window.location.href = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
   });
-}
-
-// Drilldown button
-document.getElementById('btnDrilldown').addEventListener('click', () => {
-  document.getElementById('modalTitle').textContent = 'Detail Komplain — Verifikasi';
-  openDrilldownVerifikasi();
-});
-
-// ============================================================
-// DRILLDOWN VERIFIKASI — Tabel detail di dalam modal
-// ============================================================
-let _drilldownActive = false;
-let _drilldownSumberFilter = 'all'; // Filter sumber untuk drilldown verifikasi
-
-function openDrilldownVerifikasi() {
-  _drilldownActive = true;
-  _drilldownSumberFilter = 'all'; // Reset filter sumber
-  document.getElementById('modalContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted small">Memuat data detail...</p></div>';
-  loadDrilldownPage(1);
-}
-
-function setDrilldownSumberFilter(sumber) {
-  _drilldownSumberFilter = sumber;
-  loadDrilldownPage(1); // Reload halaman 1 dengan filter baru
-}
-
-function loadDrilldownPage(page) {
-  const params = new URLSearchParams({
-    page:      page,
-    per_page:  20,
-    date_from: filterGlobal.date_from,
-    date_to:   filterGlobal.date_to,
-    sumber:    filterGlobal.sumber,
-    divisi:    filterGlobal.divisi,
-    drilldown_sumber: _drilldownSumberFilter,
-  });
-
-  const fetchUrl = BASE_URL + 'dash_crm/drilldown_verifikasi?' + params.toString();
-  console.log('Fetching drilldown from:', fetchUrl);
-
-  fetch(fetchUrl)
-    .then(r => {
-      console.log('Response status:', r.status);
-      if (!r.ok) {
-        throw new Error(`HTTP Error: ${r.status}`);
-      }
-      return r.json();
-    })
-    .then(res => {
-      console.log('Response data:', res);
-      if (!res.success) {
-        const errorMsg = res.error || 'Gagal memuat data';
-        document.getElementById('modalContent').innerHTML = `<p class="text-danger">${errorMsg}</p>`;
-        return;
-      }
-
-      if (res.data.length === 0) {
-        document.getElementById('modalContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data.</p>';
-        return;
-      }
-
-      // Mapping status_id ke badge class
-      const statusBadgeMap = {
-        2: 'waiting',   // Waiting Head Div
-        3: 'reject',    // Reject Level 1
-        4: 'working',   // Working On
-        5: 'reject',    // Reject Level 2
-        6: 'done',      // Done
-        7: 'reject',    // Unsolved
-        8: 'waiting',   // Rescheduled
-        9: 'waiting',   // Rescheduled 2
-      };
-
-      // Render filter buttons dan tabel
-      let html = `
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-          <small class="text-muted align-self-center">Filter Sumber:</small>
-          <button class="btn btn-sm ${_drilldownSumberFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('all')">Semua</button>
-          <button class="btn btn-sm ${_drilldownSumberFilter === 'konsumen' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('konsumen')">Konsumen</button>
-          <button class="btn btn-sm ${_drilldownSumberFilter === 'sosmed' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setDrilldownSumberFilter('sosmed')">Sosial Media</button>
-          <button class="btn btn-sm btn-outline-info ms-auto" onclick="exportDrilldownData()"><i class="bi bi-download"></i> Export CSV</button>
-        </div>`;
-
-      html += `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.<br/><small style="color:#999">Hanya menampilkan data dengan status: Reject, Working On, Done, atau Unsolved</small></p>
-        <div class="table-responsive">
-        <table class="table table-sm modal-table align-middle">
-          <thead><tr>
-            <th style="font-size:11px">No. Komplain</th>
-            <th style="font-size:11px">Konsumen</th>
-            <th style="font-size:11px">Lokasi</th>
-            <th style="font-size:11px">Jenis</th>
-            <th style="font-size:11px">Status</th>
-          </tr></thead><tbody>`;
-
-      res.data.forEach(row => {
-        const badgeClass = statusBadgeMap[row.status_id] || 'working';
-        html += `<tr>
-          <td><code style="font-size:11px;font-weight:600">${row.id_task}</code></td>
-          <td><small>${row.konsumen || '-'}</small></td>
-          <td><small>${row.lokasi || '-'}</small></td>
-          <td><small>${row.jenis || '-'}</small></td>
-          <td><span class="badge-status badge-${badgeClass}" style="font-size:10px">${row.status}</span></td>
-        </tr>`;
-      });
-      html += '</tbody></table></div>';
-      document.getElementById('modalContent').innerHTML = html;
-
-      // Render paginasi
-      if (_drilldownActive) {
-        renderDrilldownPagination(res.total, res.per_page, page);
-      }
-    })
-    .catch(err => {
-      console.error('Drilldown Error:', err);
-      document.getElementById('modalContent').innerHTML = `<p class="text-danger">Koneksi error: ${err.message}</p>`;
-    });
-}
-
-function renderDrilldownPagination(total, per_page, current_page) {
-  const total_pages = Math.ceil(total / per_page);
-  if (total_pages <= 1) {
-    document.getElementById('modalPagination').innerHTML = '';
-    return;
-  }
-
-  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
-  if (current_page > 1) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${current_page-1});return false;">‹</a></li>`;
-  }
-  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
-  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
-  for (let p = start; p <= end; p++) {
-    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadDrilldownPage(${p});return false;">${p}</a></li>`;
-  }
-  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${total_pages});return false;">${total_pages}</a></li>`;
-  if (current_page < total_pages) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadDrilldownPage(${current_page+1});return false;">›</a></li>`;
-  }
-  html += '</ul></nav>';
-  document.getElementById('modalPagination').innerHTML = html;
 }
 
 // ============================================================
