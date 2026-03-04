@@ -558,6 +558,14 @@ function openModal(type, extra = {}) {
     statusGroup.classList.add('d-none');
     _mfStatusVal1 = '';
     _mfStatusVal2 = '';
+  } else if (type === 'esk_sudah' || type === 'esk_belum') {
+    // Sudah/Belum Eskalasi: show sumber + date, hide status (sudah pasti dari tipenya)
+    modalFilters.style.display = 'block';
+    sumberStatusRow.classList.remove('d-none');
+    separator.classList.remove('d-none');
+    statusGroup.classList.add('d-none');
+    _mfStatusVal1 = '';
+    _mfStatusVal2 = '';
   } else if (cfg) {
     modalFilters.style.display = 'block';
     sumberStatusRow.classList.remove('d-none');

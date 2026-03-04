@@ -54,7 +54,7 @@
         <div class="kpi-card green" style="cursor:pointer" onclick="openModal('verif_total')">
           <div class="kpi-label">Total Komplain</div>
           <div class="kpi-value"><?= number_format($total_komplain, 0, ',', '.') ?></div>
-          <div class="kpi-meta">Klik untuk drill-down →</div>
+          <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -205,17 +205,25 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="kpi-card <?= $rate_eskalasi >= 80 ? 'green' : 'orange' ?>">
+        <div class="kpi-card <?= $rate_eskalasi >= 80 ? 'green' : 'orange' ?>" onclick="openModal('esk_sudah')" style="cursor:pointer">
           <div class="kpi-label">Sudah Eskalasi</div>
-          <div class="kpi-value"><?= number_format($sudah_eskalasi, 0, ',', '.') ?></div>
-          <div class="kpi-meta"><span class="pill pill-green">✓ <?= $rate_eskalasi ?>%</span></div>
+          <div class="kpi-value" style="font-size:1.4rem;color:#1E293B">
+            <?= number_format($sudah_eskalasi, 0, ',', '.') ?>
+            <span style="color:#CBD5E1;font-weight:300;margin:0 4px">|</span>
+            <?= $rate_eskalasi ?>%
+          </div>
+          <div class="kpi-meta"><span style="font-size:11px">Klik untuk detail →</span></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="kpi-card <?= $belum_eskalasi > 0 ? 'orange' : 'green' ?>">
+        <div class="kpi-card <?= $belum_eskalasi > 0 ? 'orange' : 'green' ?>" onclick="openModal('esk_belum')" style="cursor:pointer">
           <div class="kpi-label">Belum Eskalasi</div>
-          <div class="kpi-value"><?= number_format($belum_eskalasi, 0, ',', '.') ?></div>
-          <div class="kpi-meta"><span class="pill pill-orange">⚠ <?= 100 - $rate_eskalasi ?>%</span></div>
+          <div class="kpi-value" style="font-size:1.4rem;color:#1E293B">
+            <?= number_format($belum_eskalasi, 0, ',', '.') ?>
+            <span style="color:#CBD5E1;font-weight:300;margin:0 4px">|</span>
+            <?= 100 - $rate_eskalasi ?>%
+          </div>
+          <div class="kpi-meta"><span style="font-size:11px">Klik untuk detail →</span></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -386,7 +394,7 @@
             <i class="bi bi-star<?= $i <= round($rating_summary['avg_all'] ?? 0) ? '-fill text-warning' : ' text-muted' ?>"></i>
             <?php endfor; ?>
           </div>
-          <div class="mt-2"><small class="text-primary" style="font-size:11px">Klik untuk drill-down →</small></div>
+          <div class="kpi-meta" style="font-size: 11px;">Klik untuk detail <span style="font-size: 12px;">→</span></div>
         </div>
         <div class="col-12 col-md-8">
           <div class="row g-3 mb-3">
