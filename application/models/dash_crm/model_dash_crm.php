@@ -468,6 +468,24 @@ class Model_dash_crm extends CI_Model {
         return $this->db->count_all_results();
     }
 
+    /**
+     * Export semua data rating (tanpa pagination)
+     */
+    public function get_rating_drilldown_export($bintang = null, $filter = []) {
+        $this->db->select('r.id_task, t.konsumen, t.project, t.blok,
+            c.category as jenis, c.divisi,
+            r.pelayanan, r.kualitas, r.respons, r.feedback, r.avg_rating, r.created_at');
+        $this->db->from('hris.cm_rating r');
+        $this->db->join('hris.cm_task t',     't.id_task = r.id_task COLLATE utf8mb4_unicode_ci', 'left', false);
+        $this->db->join('hris.cm_category c', 'c.id = t.id_category', 'left');
+        if ($bintang !== null && $bintang !== '' && $bintang !== 'null') {
+            $this->db->where('ROUND(r.avg_rating)', (int)$bintang);
+        }
+        $this->_apply_rating_filters($filter);
+        $this->db->order_by('r.created_at', 'DESC');
+        return $this->db->get()->result_array();
+    }
+
     // ============================================================
     // SECTION 05 — STATUS KOMPLAIN
     // ============================================================

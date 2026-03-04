@@ -638,6 +638,130 @@ class Dash_crm extends CI_Controller {
     }
 
     // ============================================================
+    // EXPORT — Rating Konsumen (Excel / HTML table)
+    // ============================================================
+    public function export_rating_data() {
+        $this->_guard_referer();
+
+        try {
+            $bintang = $this->input->get('bintang');
+            $filter  = $this->_get_filter();
+
+            if ($bintang === 'null' || $bintang === '') $bintang = null;
+
+            $rows = $this->dashboard_m->get_rating_drilldown_export($bintang, $filter);
+
+            if (empty($rows)) {
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'error'   => 'Tidak ada data untuk diexport',
+                    ]));
+                return;
+            }
+
+            $sanitize = function($value, $default = '-') {
+                if ($value === null || $value === false || $value === '') return $default;
+                return trim(strip_tags((string)$value));
+            };
+
+            $esc = function($value) {
+                return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+            };
+
+            $headers = [
+                'ID Komplain',
+                'Konsumen',
+                'Lokasi',
+                'Blok',
+                'Jenis',
+                'Divisi',
+                'Avg Rating',
+                'Pelayanan',
+                'Kualitas',
+                'Respons',
+                'Feedback',
+                'Tanggal',
+            ];
+
+            $bintang_label = $bintang !== null ? $bintang . ' Bintang' : 'Semua';
+            $excel_content  = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            $excel_content .= '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+            $excel_content .= '<x:Name>Rating ' . $esc($bintang_label) . '</x:Name>';
+            $excel_content .= '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+            $excel_content .= '<body><table border="1" style="border-collapse:collapse">';
+
+            // Header row
+            $excel_content .= '<thead><tr>';
+            foreach ($headers as $h) {
+                $excel_content .= '<th style="background:#2563EB;color:#fff;font-weight:bold;padding:6px 10px;white-space:nowrap">' . $esc($h) . '</th>';
+            }
+            $excel_content .= '</tr></thead><tbody>';
+
+            // Data rows
+            foreach ($rows as $row) {
+                $avg = $sanitize($row['avg_rating'], '-');
+                $avg_num = is_numeric($avg) ? (float)$avg : 0;
+                $bg = $avg_num >= 4 ? '#D1FAE5' : ($avg_num >= 3 ? '#FEF3C7' : '#FEE2E2');
+                if ($avg === '-') $bg = '#F3F4F6';
+
+                $ratingCell = function($val) use ($sanitize, $esc) {
+                    $v = $sanitize($val, '-');
+                    if (!is_numeric($v)) return '<td style="padding:5px 8px;text-align:center">-</td>';
+                    $n = (float)$v;
+                    $c = $n >= 4 ? '#0E9F6E' : ($n >= 3 ? '#D97706' : '#E02424');
+                    return '<td style="padding:5px 8px;text-align:center;color:' . $c . ';font-weight:bold">' . number_format($n, 1) . '</td>';
+                };
+
+                $created = ($row['created_at'] && $row['created_at'] !== '0000-00-00 00:00:00')
+                    ? date('d-m-Y', strtotime($row['created_at'])) : '-';
+
+                $feedback = $sanitize($row['feedback'], '-');
+
+                $excel_content .= '<tr>';
+                $excel_content .= '<td style="padding:5px 8px;font-family:Courier New">' . $esc($sanitize($row['id_task'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['konsumen'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['project'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['blok'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['jenis'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['divisi'], '-')) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px;text-align:center;background:' . $bg . ';font-weight:bold">' . $esc($avg !== '-' ? number_format($avg_num, 1) : '-') . '</td>';
+                $excel_content .= $ratingCell($row['pelayanan']);
+                $excel_content .= $ratingCell($row['kualitas']);
+                $excel_content .= $ratingCell($row['respons']);
+                $excel_content .= '<td style="padding:5px 8px">' . $esc($feedback) . '</td>';
+                $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($created) . '</td>';
+                $excel_content .= '</tr>';
+            }
+
+            $excel_content .= '</tbody></table></body></html>';
+
+            $timestamp = date('Y-m-d_H-i-s');
+            $bintang_file = $bintang !== null ? $bintang . '-bintang' : 'semua';
+            $filename = "export_rating_{$bintang_file}_{$timestamp}.xls";
+
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+
+            echo $excel_content;
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Export Rating Error: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ]));
+        }
+    }
+
+    // ============================================================
     // AJAX — Drilldown Rating Konsumen
     // ============================================================
     public function rating_drilldown() {

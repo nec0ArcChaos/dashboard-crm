@@ -123,6 +123,7 @@
       </div>
       <div class="modal-footer border-top">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btnRatingExport">Export Excel</button>
       </div>
     </div>
   </div>
@@ -911,6 +912,20 @@ if (document.getElementById('btnKetepatanExport')) {
 // ============================================================
 const bsRatingModal = new bootstrap.Modal(document.getElementById('ratingDrilldownModal'));
 let _ratingBintangFilter = null; // null = semua, 1-5 = per bintang
+
+// Export rating konsumen — Download Excel file
+if (document.getElementById('btnRatingExport')) {
+  document.getElementById('btnRatingExport').addEventListener('click', () => {
+    const params = new URLSearchParams({
+      date_from: filterGlobal.date_from,
+      date_to:   filterGlobal.date_to,
+      sumber:    filterGlobal.sumber,
+      divisi:    filterGlobal.divisi,
+    });
+    if (_ratingBintangFilter !== null) params.set('bintang', _ratingBintangFilter);
+    window.location.href = BASE_URL + 'dash_crm/export_rating_data?' + params.toString();
+  });
+}
 
 function _renderRatingStarFilter() {
   let filterHtml = `<button class="btn btn-xs ${_ratingBintangFilter===null?'btn-warning':'btn-outline-secondary'}" style="font-size:11px;padding:2px 8px;border-radius:100px" onclick="openRatingDrilldown(null)">Semua ⭐</button>`;
