@@ -1052,17 +1052,153 @@ function renderRatingDrilldownPagination() { /* DataTables handles pagination */
 // ============================================================
 // FILTER — submit via form GET
 // ============================================================
+const PRESET_LABELS = {
+  this_week: 'This Week', last_week: 'Last Week',
+  this_month: 'This Month', last_month: 'Last Month',
+  last_year: 'Last Year', custom: 'Custom Date'
+};
+
+function formatDateISO(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatDateShort(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function getDateRange(preset) {
+  const today = new Date();
+  switch(preset) {
+    case 'this_week': {
+      const dow = today.getDay() || 7;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - dow + 1);
+      return { from: formatDateISO(monday), to: formatDateISO(today) };
+    }
+    case 'last_week': {
+      const dow = today.getDay() || 7;
+      const lastMonday = new Date(today);
+      lastMonday.setDate(today.getDate() - dow - 6);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      return { from: formatDateISO(lastMonday), to: formatDateISO(lastSunday) };
+    }
+    case 'this_month': {
+      const first = new Date(today.getFullYear(), today.getMonth(), 1);
+      const last  = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return { from: formatDateISO(first), to: formatDateISO(last) };
+    }
+    case 'last_month': {
+      const first = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const last  = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { from: formatDateISO(first), to: formatDateISO(last) };
+    }
+    case 'last_year': {
+      const yr = today.getFullYear() - 1;
+      return { from: yr + '-01-01', to: yr + '-12-31' };
+    }
+    default:
+      return null;
+  }
+}
+
+function getSelectedPreset() {
+  const checked = document.querySelector('input[name="datePreset"]:checked');
+  return checked ? checked.value : null;
+}
+
+function togglePeriodPopup() {
+  const popup = document.getElementById('periodPopup');
+  popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+}
+
+function onPresetChange() {
+  const preset = getSelectedPreset();
+  const customDiv = document.getElementById('customDateRange');
+  if (preset === 'custom') {
+    customDiv.style.display = 'block';
+  } else {
+    customDiv.style.display = 'none';
+    const range = getDateRange(preset);
+    if (range) {
+      document.getElementById('dateFrom').value = range.from;
+      document.getElementById('dateTo').value = range.to;
+    }
+  }
+  updatePeriodeLabel();
+}
+
+function updatePeriodeLabel() {
+  const preset = getSelectedPreset();
+  const label = document.getElementById('btnPeriodeLabel');
+  if (!preset) {
+    // Default/reset state: tampilkan range tanggal dari input
+    const f = document.getElementById('dateFrom').value;
+    const t = document.getElementById('dateTo').value;
+    label.textContent = (f && t) ? formatDateShort(f) + ' - ' + formatDateShort(t) : 'Periode';
+  } else if (preset === 'custom') {
+    const f = document.getElementById('dateFrom').value;
+    const t = document.getElementById('dateTo').value;
+    label.textContent = (f && t) ? formatDateShort(f) + ' - ' + formatDateShort(t) : 'Custom Date';
+  } else {
+    label.textContent = PRESET_LABELS[preset] || 'Periode';
+  }
+}
+
 function applyFilter() {
-  const f = document.getElementById('dateFrom').value;
-  const t = document.getElementById('dateTo').value;
+  const preset = getSelectedPreset();
+  let f, t;
+  if (!preset || preset === 'custom') {
+    // null (default state) atau custom: ambil dari input
+    f = document.getElementById('dateFrom').value;
+    t = document.getElementById('dateTo').value;
+  } else {
+    const range = getDateRange(preset);
+    f = range.from;
+    t = range.to;
+  }
   const s = document.getElementById('filterSumber').value;
   const d = document.getElementById('filterDivisi').value;
   window.location.href = BASE_URL + 'dash_crm?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
 }
 
 function resetFilter() {
-  window.location.href = BASE_URL + 'dash_crm?date_from=2025-01-01&date_to=' + new Date().toISOString().split('T')[0] + '&sumber=all&divisi=all';
+  // Reset default = This Month (awal bulan s.d. akhir bulan ini)
+  window.location.href = BASE_URL + 'dash_crm';
 }
+
+// Close popup when clicking outside
+document.addEventListener('click', function(e) {
+  const popup = document.getElementById('periodPopup');
+  const btn = document.getElementById('btnPeriode');
+  if (popup.style.display !== 'none' && !popup.contains(e.target) && !btn.contains(e.target)) {
+    popup.style.display = 'none';
+  }
+});
+
+// Auto-detect preset on page load
+(function() {
+  const dateFrom = document.getElementById('dateFrom').value;
+  const dateTo   = document.getElementById('dateTo').value;
+  const presets  = ['this_week', 'last_week', 'this_month', 'last_month', 'last_year'];
+  let matched = false;
+  for (const p of presets) {
+    const range = getDateRange(p);
+    if (range && range.from === dateFrom && range.to === dateTo) {
+      const radio = document.querySelector('input[name="datePreset"][value="' + p + '"]');
+      if (radio) radio.checked = true;
+      matched = true;
+      break;
+    }
+  }
+  if (!matched) {
+    const radio = document.querySelector('input[name="datePreset"][value="custom"]');
+    if (radio) radio.checked = true;
+    document.getElementById('customDateRange').style.display = 'block';
+  }
+  updatePeriodeLabel();
+})()
 </script>
 </body>
 </html>

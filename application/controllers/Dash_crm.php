@@ -1155,14 +1155,17 @@ class Dash_crm extends CI_Controller {
     }
 
     private function _get_filter() {
-        $date_from = $this->input->get('date_from') ?: '2025-01-01';
-        $date_to   = $this->input->get('date_to')   ?: date('Y-m-d');
+        // Default = This Month (awal bulan s.d. akhir bulan ini)
+        $default_from = date('Y-m-01');
+        $default_to   = date('Y-m-t');
+        $date_from = $this->input->get('date_from') ?: $default_from;
+        $date_to   = $this->input->get('date_to')   ?: $default_to;
         $sumber    = $this->input->get('sumber')    ?: 'all';
         $divisi    = $this->input->get('divisi_filter') ?: $this->input->get('divisi') ?: 'all';
 
         // Validasi format tanggal
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) $date_from = '2025-01-01';
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to))   $date_to   = date('Y-m-d');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) $date_from = $default_from;
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to))   $date_to   = $default_to;
 
         return [
             'date_from' => $date_from,
