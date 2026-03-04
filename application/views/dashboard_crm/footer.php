@@ -146,15 +146,19 @@ function updateClock() {
 setInterval(updateClock,1000); updateClock();
 
 // ============================================================
-// DATA DARI PHP (diteruskan via JSON)
+// DATA CHART — dimuat via AJAX (fallback: set false untuk inline)
 // ============================================================
-const ketepatanData = <?= $ketepatan_json ?>;
-const statusData    = <?= $status_json ?>;
-const verifChart    = <?= $verif_chart_json ?>;
-const eskalasiDonut = <?= $eskalasi_donut_json ?>;
-const trendLabels   = <?= $trend_labels_json ?>;
-const trendData     = <?= $trend_data_json ?>;
-const totalEsk      = <?= $sudah_eskalasi ?>;
+const USE_AJAX_CHART = true;
+
+let ketepatanData = [];
+let statusData    = [];
+let verifChart    = {konsumen_terverifikasi:0,konsumen_belum:0,sosmed_terverifikasi:0,sosmed_belum:0};
+let eskalasiDonut = {sudah:0,belum:0};
+let trendLabels   = [];
+let trendData     = [];
+let totalEsk      = 0;
+let _verifDonutData = [0,0];
+
 const BASE_URL      = '<?= base_url() ?>';
 const filterGlobal  = {
   date_from: '<?= $filter['date_from'] ?>',
@@ -163,204 +167,256 @@ const filterGlobal  = {
   divisi:    '<?= $filter['divisi'] ?>',
 };
 
-// ============================================================
-// SECTION 01 — CHARTS VERIFIKASI
-// ============================================================
-// Build chart data berdasarkan filter sumber
-const verifLabels = [];
-const verifTerverifikasiData = [];
-const verifBelumData = [];
-const verifBarTypes = []; // track sumber per bar index untuk onClick
+// Track chart instances untuk destroy sebelum re-init
+const _chartInstances = {};
 
-if (filterGlobal.sumber !== 'sosmed') {
-  verifLabels.push('Dari Konsumen');
-  verifTerverifikasiData.push(verifChart.konsumen_terverifikasi);
-  verifBelumData.push(verifChart.konsumen_belum);
-  verifBarTypes.push('konsumen');
-}
-if (filterGlobal.sumber !== 'konsumen') {
-  verifLabels.push('Dari Sosmed');
-  verifTerverifikasiData.push(verifChart.sosmed_terverifikasi);
-  verifBelumData.push(verifChart.sosmed_belum);
-  verifBarTypes.push('sosmed');
-}
+// ============================================================
+// INIT SEMUA CHART — bisa dipanggil ulang setelah AJAX load
+// ============================================================
+function initAllCharts() {
+  // Destroy existing chart instances
+  Object.keys(_chartInstances).forEach(key => {
+    if (_chartInstances[key]) { _chartInstances[key].destroy(); _chartInstances[key] = null; }
+  });
 
-new Chart('chartVerifSumber', {
-  type: 'bar',
-  data: {
-    labels: verifLabels,
-    datasets: [
-      { label:'Terverifikasi', data:verifTerverifikasiData, backgroundColor:'#0E9F6E', borderRadius:6 },
-      { label:'Belum Verif.',  data:verifBelumData,         backgroundColor:'#E02424', borderRadius:6 },
-    ]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{
-      legend:{
-        display:true,
-        position:'bottom',
-        labels:{
-          boxWidth:10,
-          font:{size:11},
-          usePointStyle:true,
-          padding:12,
-          cursor:'pointer'
-        },
-        onClick:(e, legendItem, chart) => {
-          e.native.stopImmediatePropagation();
-          openModal('verif_total');
+  // --- SECTION 01: VERIFIKASI ---
+  const verifLabels = [];
+  const verifTerverifikasiData = [];
+  const verifBelumData = [];
+  const verifBarTypes = [];
+
+  if (filterGlobal.sumber !== 'sosmed') {
+    verifLabels.push('Dari Konsumen');
+    verifTerverifikasiData.push(verifChart.konsumen_terverifikasi);
+    verifBelumData.push(verifChart.konsumen_belum);
+    verifBarTypes.push('konsumen');
+  }
+  if (filterGlobal.sumber !== 'konsumen') {
+    verifLabels.push('Dari Sosmed');
+    verifTerverifikasiData.push(verifChart.sosmed_terverifikasi);
+    verifBelumData.push(verifChart.sosmed_belum);
+    verifBarTypes.push('sosmed');
+  }
+
+  _chartInstances.verifSumber = new Chart('chartVerifSumber', {
+    type: 'bar',
+    data: {
+      labels: verifLabels,
+      datasets: [
+        { label:'Terverifikasi', data:verifTerverifikasiData, backgroundColor:'#0E9F6E', borderRadius:6 },
+        { label:'Belum Verif.',  data:verifBelumData,         backgroundColor:'#E02424', borderRadius:6 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          display:true,
+          position:'bottom',
+          labels:{
+            boxWidth:10,
+            font:{size:11},
+            usePointStyle:true,
+            padding:12,
+            cursor:'pointer'
+          },
+          onClick:(e, legendItem, chart) => {
+            e.native.stopImmediatePropagation();
+            openModal('verif_total');
+          }
+        }
+      },
+      scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#E4E8F0'}} },
+      onClick:(e,els)=>{
+        if(els.length) openModal('verif_total');
+      }
+    }
+  });
+
+  _chartInstances.verifDonut = new Chart('chartVerifDonut', {
+    type: 'doughnut',
+    data: {
+      labels: ['Terverifikasi','Belum Terverifikasi'],
+      datasets:[{ data:_verifDonutData, backgroundColor:['#0E9F6E','#E02424'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
+      onClick:(e,els)=>{ if(els.length) openModal('verif_total'); }
+    }
+  });
+
+  // --- SECTION 02: ESKALASI ---
+  _chartInstances.eskalasiTrend = new Chart('chartEskalasiTrend', {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets:[{
+        label:'Eskalasi',
+        data: trendData,
+        borderColor:'#1A56DB', backgroundColor:'rgba(26,86,219,.08)',
+        tension:.4, fill:true, pointRadius:4, pointHoverRadius:7,
+        pointBackgroundColor:'#fff', pointBorderColor:'#1A56DB', pointBorderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{grid:{color:'#E4E8F0'},ticks:{font:{size:10}}}
+      }
+    }
+  });
+
+  _chartInstances.eskalasiDonut = new Chart('chartEskalasiDonut', {
+    type: 'doughnut',
+    data: {
+      labels:['Sudah Eskalasi','Belum Eskalasi'],
+      datasets:[{ data:[eskalasiDonut.sudah, eskalasiDonut.belum], backgroundColor:['#0E9F6E','#D97706'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{display:false} },
+      onClick:(e,els)=>{
+        if(els.length) {
+          openModal('esk_gabungan');
+          setTimeout(() => {
+            setSumberEskalasiFilter(els[0].index===0?'sudah':'belum');
+          }, 100);
         }
       }
-    },
-    scales:{ x:{stacked:true,grid:{display:false}}, y:{stacked:true,grid:{color:'#E4E8F0'}} },
-    onClick:(e,els)=>{
-      if(els.length) openModal('verif_total');
     }
-  }
-});
-
-new Chart('chartVerifDonut', {
-  type: 'doughnut',
-  data: {
-    labels: ['Terverifikasi','Belum Terverifikasi'],
-    datasets:[{ data:[<?= $terverifikasi ?>,<?= $belum_verifikasi ?>], backgroundColor:['#0E9F6E','#E02424'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false, cutout:'68%',
-    plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
-    onClick:(e,els)=>{ if(els.length) openModal('verif_total'); }
-  }
-});
-
-// ============================================================
-// SECTION 02 — CHARTS ESKALASI
-// ============================================================
-new Chart('chartEskalasiTrend', {
-  type: 'line',
-  data: {
-    labels: trendLabels,
-    datasets:[{
-      label:'Eskalasi',
-      data: trendData,
-      borderColor:'#1A56DB', backgroundColor:'rgba(26,86,219,.08)',
-      tension:.4, fill:true, pointRadius:4, pointHoverRadius:7,
-      pointBackgroundColor:'#fff', pointBorderColor:'#1A56DB', pointBorderWidth:2,
-    }]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false} },
-    scales:{
-      x:{grid:{display:false},ticks:{font:{size:10}}},
-      y:{grid:{color:'#E4E8F0'},ticks:{font:{size:10}}}
-    }
-  }
-});
-
-new Chart('chartEskalasiDonut', {
-  type: 'doughnut',
-  data: {
-    labels:['Sudah Eskalasi','Belum Eskalasi'],
-    datasets:[{ data:[eskalasiDonut.sudah, eskalasiDonut.belum], backgroundColor:['#0E9F6E','#D97706'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false, cutout:'68%',
-    plugins:{ legend:{display:false} },
-    onClick:(e,els)=>{
-      if(els.length) {
-        // Buka modal dengan data gabungan + filter buttons
-        openModal('esk_gabungan');
-        // Segera set filter sesuai dengan yang diklik
-        setTimeout(() => {
-          setSumberEskalasiFilter(els[0].index===0?'sudah':'belum');
-        }, 100);
-      }
-    }
-  }
-});
-
-// ============================================================
-// SECTION 03 — KETEPATAN WAKTU
-// ============================================================
-new Chart('chartKetepatan', {
-  type:'bar',
-  data:{
-    labels: ketepatanData.map(d => d.label),
-    datasets:[
-      { label:'On Time', data:ketepatanData.map(d=>d.ontime), backgroundColor:'#0E9F6E', borderRadius:4 },
-      { label:'Late',    data:ketepatanData.map(d=>d.late),  backgroundColor:'#E02424', borderRadius:4 },
-    ]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false, indexAxis:'y',
-    plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
-    scales:{
-      x:{grid:{color:'#E4E8F0'},ticks:{font:{size:10}}},
-      y:{grid:{display:false},ticks:{font:{size:10}}}
-    },
-    onClick:(e,els)=>{
-      if(els.length) {
-        const ketepatan_type = els[0].datasetIndex === 0 ? 'ontime' : 'late';
-        openModal('divisi', {divisi: ketepatanData[els[0].index].divisi, ketepatan_type});
-      }
-    }
-  }
-});
-
-// Render ketepatan list
-const klEl = document.getElementById('ketepatanList');
-if (klEl) {
-  ketepatanData.forEach(d => {
-    const pct = d.pct, isGreen = pct >= 80;
-    const div = document.createElement('div');
-    div.className = 'status-item';
-    div.onclick = () => openModal('divisi', {divisi: d.divisi});
-    div.innerHTML = `
-      <div class="status-dot-sm" style="background:${isGreen?'#0E9F6E':'#E02424'}"></div>
-      <div class="status-name" style="font-size:12px">${d.label}</div>
-      <div class="flex-grow-1 mx-2">
-        <div class="progress" style="height:6px">
-          <div class="progress-bar ${isGreen?'bg-success':'bg-danger'}" style="width:${pct}%"></div>
-        </div>
-      </div>
-      <div class="prog-pct" style="color:${isGreen?'#0E9F6E':'#E02424'}">${pct}%</div>`;
-    klEl.appendChild(div);
   });
+
+  // --- SECTION 03: KETEPATAN WAKTU ---
+  _chartInstances.ketepatan = new Chart('chartKetepatan', {
+    type:'bar',
+    data:{
+      labels: ketepatanData.map(d => d.label),
+      datasets:[
+        { label:'On Time', data:ketepatanData.map(d=>d.ontime), backgroundColor:'#0E9F6E', borderRadius:4 },
+        { label:'Late',    data:ketepatanData.map(d=>d.late),  backgroundColor:'#E02424', borderRadius:4 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
+      scales:{
+        x:{grid:{color:'#E4E8F0'},ticks:{font:{size:10}}},
+        y:{grid:{display:false},ticks:{font:{size:10}}}
+      },
+      onClick:(e,els)=>{
+        if(els.length) {
+          const ketepatan_type = els[0].datasetIndex === 0 ? 'ontime' : 'late';
+          openModal('divisi', {divisi: ketepatanData[els[0].index].divisi, ketepatan_type});
+        }
+      }
+    }
+  });
+
+  // Render ketepatan list
+  const klEl = document.getElementById('ketepatanList');
+  if (klEl) {
+    klEl.innerHTML = '';
+    ketepatanData.forEach(d => {
+      const pct = d.pct, isGreen = pct >= 80;
+      const div = document.createElement('div');
+      div.className = 'status-item';
+      div.onclick = () => openModal('divisi', {divisi: d.divisi});
+      div.innerHTML = `
+        <div class="status-dot-sm" style="background:${isGreen?'#0E9F6E':'#E02424'}"></div>
+        <div class="status-name" style="font-size:12px">${d.label}</div>
+        <div class="flex-grow-1 mx-2">
+          <div class="progress" style="height:6px">
+            <div class="progress-bar ${isGreen?'bg-success':'bg-danger'}" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div class="prog-pct" style="color:${isGreen?'#0E9F6E':'#E02424'}">${pct}%</div>`;
+      klEl.appendChild(div);
+    });
+  }
+
+  // --- SECTION 05: STATUS KOMPLAIN ---
+  _chartInstances.status = new Chart('chartStatus', {
+    type:'doughnut',
+    data:{
+      labels: statusData.map(d=>d.label),
+      datasets:[{ data:statusData.map(d=>d.qty), backgroundColor:statusData.map(d=>d.color), borderWidth:2, borderColor:'#fff', hoverOffset:8 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'55%',
+      plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:10},padding:10}} },
+      onClick:(e,els)=>{ if(els.length) openModal('status', {status_id: statusData[els[0].index].id}); }
+    }
+  });
+
+  // Render status list
+  const slEl = document.getElementById('statusList');
+  if (slEl) {
+    slEl.innerHTML = '';
+    statusData.forEach(s => {
+      const pct = totalEsk > 0 ? Math.round(s.qty/totalEsk*100) : 0;
+      const div = document.createElement('div');
+      div.className = 'status-item';
+      div.onclick = () => openModal('status', {status_id: s.id});
+      div.innerHTML = `
+        <div class="status-dot-sm" style="background:${s.color}"></div>
+        <div class="status-name">${s.label}</div>
+        <div class="status-qty">${s.qty.toLocaleString('id')}</div>
+        <div class="status-pct">${pct}%</div>
+        <span class="badge-status badge-${s.badge}">${s.badge==='done'?'✓':'→'}</span>`;
+      slEl.appendChild(div);
+    });
+  }
 }
 
 // ============================================================
-// SECTION 05 — STATUS KOMPLAIN
+// LOAD CHART DATA VIA AJAX
 // ============================================================
-new Chart('chartStatus', {
-  type:'doughnut',
-  data:{
-    labels: statusData.map(d=>d.label),
-    datasets:[{ data:statusData.map(d=>d.qty), backgroundColor:statusData.map(d=>d.color), borderWidth:2, borderColor:'#fff', hoverOffset:8 }]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false, cutout:'55%',
-    plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:10},padding:10}} },
-    onClick:(e,els)=>{ if(els.length) openModal('status', {status_id: statusData[els[0].index].id}); }
-  }
-});
-
-// Render status list
-const slEl = document.getElementById('statusList');
-if (slEl) {
-  statusData.forEach(s => {
-    const pct = totalEsk > 0 ? Math.round(s.qty/totalEsk*100) : 0;
-    const div = document.createElement('div');
-    div.className = 'status-item';
-    div.onclick = () => openModal('status', {status_id: s.id});
-    div.innerHTML = `
-      <div class="status-dot-sm" style="background:${s.color}"></div>
-      <div class="status-name">${s.label}</div>
-      <div class="status-qty">${s.qty.toLocaleString('id')}</div>
-      <div class="status-pct">${pct}%</div>
-      <span class="badge-status badge-${s.badge}">${s.badge==='done'?'✓':'→'}</span>`;
-    slEl.appendChild(div);
+function loadChartDataViaAjax() {
+  const params = new URLSearchParams({
+    date_from: filterGlobal.date_from,
+    date_to:   filterGlobal.date_to,
+    sumber:    filterGlobal.sumber,
+    divisi_filter: filterGlobal.divisi,
   });
+
+  fetch(BASE_URL + 'dash_crm/chart_data?' + params.toString(), {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(res => {
+      if (!res.success) throw new Error(res.error || 'Unknown error');
+
+      const d = res.data;
+      ketepatanData   = d.ketepatan   || [];
+      statusData      = d.status      || [];
+      verifChart      = d.verifChart  || verifChart;
+      eskalasiDonut   = d.eskalasiDonut || eskalasiDonut;
+      trendLabels     = d.trendLabels || [];
+      trendData       = d.trendData   || [];
+      totalEsk        = d.totalEskalasi || 0;
+      _verifDonutData = [d.terverifikasi || 0, d.belumVerifikasi || 0];
+
+      initAllCharts();
+    })
+    .catch(err => {
+      console.warn('[Chart AJAX fallback] Gagal memuat via AJAX, chart kosong:', err.message);
+      initAllCharts();
+    });
+}
+
+// ============================================================
+// BOOT — pilih mode AJAX atau langsung init
+// ============================================================
+if (USE_AJAX_CHART) {
+  loadChartDataViaAjax();
+} else {
+  initAllCharts();
 }
 
 // ============================================================

@@ -86,8 +86,8 @@ class Dash_crm extends CI_Controller {
         }
 
         // KETEPATAN WAKTU
-        $ketepatan_raw = $this->dashboard_m->get_ketepatan_waktu($filter);
-        $ketepatan     = [];
+        $chart_data = $this->_build_chart_data($filter);
+        $ketepatan      = $chart_data['ketepatan'];
         $max_ontime_pct = 0;
         $min_ontime_pct = 100;
         $max_divisi = '';
@@ -98,19 +98,11 @@ class Dash_crm extends CI_Controller {
         $divisi_bawah_80 = 0;
         $divisi_atas_80  = 0;
 
-        foreach ($ketepatan_raw as $row) {
-            $pct = $row['total'] > 0 ? round(($row['ontime'] / $row['total']) * 100) : 0;
-            $ketepatan[] = [
-                'divisi' => $row['divisi'],
-                'label'  => $row['label'],
-                'total'  => $row['total'],
-                'ontime' => $row['ontime'],
-                'late'   => $row['late'],
-                'pct'    => $pct,
-            ];
+        foreach ($ketepatan as $row) {
             $total_ketepatan += $row['total'];
             $total_ontime    += (int)$row['ontime'];
             $total_late      += (int)$row['late'];
+            $pct = $row['pct'];
 
             if ($row['total'] > 0) {
                 if ($pct > $max_ontime_pct) { $max_ontime_pct = $pct; $max_divisi = $row['label']; }
@@ -124,40 +116,16 @@ class Dash_crm extends CI_Controller {
         $distribusi_rating = $this->dashboard_m->get_distribusi_rating($filter);
 
         // STATUS
-        $status_raw = $this->dashboard_m->get_status_komplain($filter);
-
-        // Peta warna dan badge per status_id
-        $status_color_map = [
-            1 => ['color' => '#6B7280', 'badge' => 'waiting'],   // Waiting
-            2 => ['color' => '#D97706', 'badge' => 'waiting'],   // Waiting Head Div
-            3 => ['color' => '#E02424', 'badge' => 'reject'],    // Reject Level 1
-            4 => ['color' => '#1A56DB', 'badge' => 'working'],   // Working On
-            5 => ['color' => '#F05252', 'badge' => 'reject'],    // Reject Level 2
-            6 => ['color' => '#0E9F6E', 'badge' => 'done'],      // Done
-            7 => ['color' => '#E02424', 'badge' => 'reject'],    // Unsolved
-            8 => ['color' => '#9061F9', 'badge' => 'waiting'],   // Rescheduled
-            9 => ['color' => '#F05252', 'badge' => 'waiting'],   // Rescheduled 2
-        ];
-
-        $status_list  = [];
+        $status_list  = $chart_data['status'];
         $total_done   = 0;
         $total_reject = 0;
         $total_inprog = 0;
 
-        foreach ($status_raw as $row) {
-            $id    = (int)$row['id'];
-            $color = isset($status_color_map[$id]) ? $status_color_map[$id]['color'] : '#6B7280';
-            $badge = isset($status_color_map[$id]) ? $status_color_map[$id]['badge'] : 'waiting';
-            $status_list[] = [
-                'id'    => $id,
-                'label' => $row['status'],
-                'qty'   => (int)$row['total'],
-                'color' => $color,
-                'badge' => $badge,
-            ];
-            if ($id == 6) $total_done   = (int)$row['total'];
-            if ($id == 3 || $id == 5 || $id == 7) $total_reject += (int)$row['total'];
-            if ($id == 4 || $id == 8 || $id == 9) $total_inprog += (int)$row['total'];
+        foreach ($status_list as $s) {
+            $id = $s['id'];
+            if ($id == 6) $total_done   = $s['qty'];
+            if ($id == 3 || $id == 5 || $id == 7) $total_reject += $s['qty'];
+            if ($id == 4 || $id == 8 || $id == 9) $total_inprog += $s['qty'];
         }
 
         // Daftar divisi untuk dropdown filter
@@ -191,12 +159,9 @@ class Dash_crm extends CI_Controller {
             'eskalasi_per_sumber' => $eskalasi_per_sumber,
             'pct_konsumen_eskalasi' => $pct_konsumen_eskalasi,
             'pct_sosmed_eskalasi'   => $pct_sosmed_eskalasi,
-            'trend_labels_json'   => json_encode(array_values($trend_labels)),
-            'trend_data_json'     => json_encode(array_values($trend_data)),
 
             // Section 03 Ketepatan Waktu
             'ketepatan'           => $ketepatan,
-            'ketepatan_json'      => json_encode($ketepatan),
             'max_ontime_pct'      => $max_ontime_pct,
             'max_divisi'          => $max_divisi,
             'min_ontime_pct'      => $min_ontime_pct,
@@ -213,27 +178,31 @@ class Dash_crm extends CI_Controller {
 
             // Section 05 Status
             'status_list'         => $status_list,
-            'status_json'         => json_encode($status_list),
             'total_done'          => $total_done,
             'total_reject'        => $total_reject,
             'total_inprog'        => $total_inprog,
-
-            // Verifikasi chart JSON
-            'verif_chart_json' => json_encode([
-                'konsumen_terverifikasi' => $verif_per_sumber['konsumen']['terverifikasi'],
-                'konsumen_belum'         => $verif_per_sumber['konsumen']['belum'],
-                'sosmed_terverifikasi'   => $verif_per_sumber['sosmed']['terverifikasi'],
-                'sosmed_belum'           => $verif_per_sumber['sosmed']['belum'],
-            ]),
-            'eskalasi_donut_json' => json_encode([
-                'sudah' => $sudah_eskalasi,
-                'belum' => $belum_eskalasi,
-            ]),
         ];
 
         $this->load->view('dashboard_crm/header', $data);
         $this->load->view('dashboard_crm/index', $data);
         $this->load->view('dashboard_crm/footer', $data);
+    }
+
+    // ============================================================
+    // AJAX — Chart Data (menggantikan inline JSON)
+    // ============================================================
+    public function chart_data() {
+        $this->_guard_ajax();
+
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $filter = $this->_get_filter();
+        $data   = $this->_build_chart_data($filter);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['success' => true, 'data' => $data]));
     }
 
     // ============================================================
@@ -964,6 +933,100 @@ class Dash_crm extends CI_Controller {
                     'error'   => $e->getMessage(),
                 ]));
         }
+    }
+
+    // --------------------------------------------------------
+    // Build chart data — dipakai oleh index() dan chart_data()
+    // --------------------------------------------------------
+
+    private function _build_chart_data($filter) {
+        // Verifikasi
+        $total_komplain   = $this->dashboard_m->get_total_komplain($filter);
+        $terverifikasi    = $this->dashboard_m->get_terverifikasi($filter);
+        $belum_verifikasi = $this->dashboard_m->get_belum_verifikasi($filter);
+        $verif_per_sumber = $this->dashboard_m->get_verifikasi_per_sumber($filter);
+
+        if ($filter['sumber'] === 'konsumen') {
+            $verif_per_sumber['sosmed'] = ['terverifikasi' => 0, 'belum' => 0];
+        } elseif ($filter['sumber'] === 'sosmed') {
+            $verif_per_sumber['konsumen'] = ['terverifikasi' => 0, 'belum' => 0];
+        }
+
+        // Eskalasi
+        $sudah_eskalasi = $this->dashboard_m->get_sudah_eskalasi($filter);
+        $belum_eskalasi = $this->dashboard_m->get_belum_eskalasi($filter);
+
+        $trend_eskalasi_raw = $this->dashboard_m->get_trend_eskalasi($filter);
+        $trend_labels = [];
+        $trend_data   = [];
+        foreach ($trend_eskalasi_raw as $row) {
+            $ts = strtotime($row['bulan'] . '-01');
+            $trend_labels[] = date('M', $ts)."'".date('y', $ts);
+            $trend_data[]   = (int)$row['total'];
+        }
+
+        // Ketepatan Waktu
+        $ketepatan_raw = $this->dashboard_m->get_ketepatan_waktu($filter);
+        $ketepatan = [];
+        foreach ($ketepatan_raw as $row) {
+            $pct = $row['total'] > 0 ? round(($row['ontime'] / $row['total']) * 100) : 0;
+            $ketepatan[] = [
+                'divisi' => $row['divisi'],
+                'label'  => $row['label'],
+                'total'  => $row['total'],
+                'ontime' => $row['ontime'],
+                'late'   => $row['late'],
+                'pct'    => $pct,
+            ];
+        }
+
+        // Status
+        $status_color_map = [
+            1 => ['color' => '#6B7280', 'badge' => 'waiting'],
+            2 => ['color' => '#D97706', 'badge' => 'waiting'],
+            3 => ['color' => '#E02424', 'badge' => 'reject'],
+            4 => ['color' => '#1A56DB', 'badge' => 'working'],
+            5 => ['color' => '#F05252', 'badge' => 'reject'],
+            6 => ['color' => '#0E9F6E', 'badge' => 'done'],
+            7 => ['color' => '#E02424', 'badge' => 'reject'],
+            8 => ['color' => '#9061F9', 'badge' => 'waiting'],
+            9 => ['color' => '#F05252', 'badge' => 'waiting'],
+        ];
+
+        $status_raw  = $this->dashboard_m->get_status_komplain($filter);
+        $status_list = [];
+        foreach ($status_raw as $row) {
+            $id    = (int)$row['id'];
+            $color = isset($status_color_map[$id]) ? $status_color_map[$id]['color'] : '#6B7280';
+            $badge = isset($status_color_map[$id]) ? $status_color_map[$id]['badge'] : 'waiting';
+            $status_list[] = [
+                'id'    => $id,
+                'label' => $row['status'],
+                'qty'   => (int)$row['total'],
+                'color' => $color,
+                'badge' => $badge,
+            ];
+        }
+
+        return [
+            'ketepatan'    => $ketepatan,
+            'status'       => $status_list,
+            'verifChart'   => [
+                'konsumen_terverifikasi' => $verif_per_sumber['konsumen']['terverifikasi'],
+                'konsumen_belum'         => $verif_per_sumber['konsumen']['belum'],
+                'sosmed_terverifikasi'   => $verif_per_sumber['sosmed']['terverifikasi'],
+                'sosmed_belum'           => $verif_per_sumber['sosmed']['belum'],
+            ],
+            'eskalasiDonut' => [
+                'sudah' => $sudah_eskalasi,
+                'belum' => $belum_eskalasi,
+            ],
+            'trendLabels'    => array_values($trend_labels),
+            'trendData'      => array_values($trend_data),
+            'totalEskalasi'  => $sudah_eskalasi,
+            'terverifikasi'  => $terverifikasi,
+            'belumVerifikasi' => $belum_verifikasi,
+        ];
     }
 
     // --------------------------------------------------------
