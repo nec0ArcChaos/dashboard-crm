@@ -612,9 +612,10 @@ class Model_dash_crm extends CI_Model {
                 break;
             case 'esk_sudah':
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
                 break;
             case 'esk_belum':
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
                 break;
             case 'esk_gabungan':
                 // Menampilkan semua data eskalasi (baik sudah maupun belum)
@@ -623,18 +624,20 @@ class Model_dash_crm extends CI_Model {
             case 'esk_konsumen_sudah':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
                 break;
             case 'esk_konsumen_belum':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
                 break;
             case 'esk_sosmed_sudah':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
                 break;
             case 'esk_sosmed_belum':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
                 break;
             case 'ketepatan_total':
                 // Hanya tampilkan data dengan status Done (status = 6)
@@ -722,8 +725,9 @@ class Model_dash_crm extends CI_Model {
         if (!empty($extra['modal_eskalasi'])) {
             if ($extra['modal_eskalasi'] === 'sudah') {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
             }
         }
 
@@ -837,9 +841,12 @@ class Model_dash_crm extends CI_Model {
                 $this->db->where('t.status', 1);
                 break;
             case 'esk_sudah':
-                $this->db->where('t.escalation_at IS NOT NULL', null, false); break;
+                $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
+                break;
             case 'esk_belum':
-                $this->db->where('t.escalation_at IS NULL', null, false); break;
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
+                break;
             case 'esk_gabungan':
                 // Menampilkan semua data eskalasi (baik sudah maupun belum)
                 // Filter sumber akan diaplikasikan dari modal_sumber
@@ -847,18 +854,20 @@ class Model_dash_crm extends CI_Model {
             case 'esk_konsumen_sudah':
                 $this->db->where('t.status_konsumen', 1);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
                 break;
             case 'esk_konsumen_belum':
                 $this->db->where('t.status_konsumen', 1);
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
                 break;
             case 'esk_sosmed_sudah':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
                 break;
             case 'esk_sosmed_belum':
                 $this->db->where('(t.status_konsumen IS NULL OR t.status_konsumen = 0)', null, false);
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
                 break;
             case 'ketepatan_total':
                 // Hanya tampilkan data dengan status Done (status = 6)
@@ -946,8 +955,9 @@ class Model_dash_crm extends CI_Model {
         if (!empty($extra['modal_eskalasi'])) {
             if ($extra['modal_eskalasi'] === 'sudah') {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
             }
         }
 
@@ -1396,8 +1406,9 @@ class Model_dash_crm extends CI_Model {
         if (!empty($extra['modal_eskalasi'])) {
             if ($extra['modal_eskalasi'] === 'sudah') {
                 $this->db->where('t.escalation_at IS NOT NULL', null, false);
+                $this->db->where('t.status NOT IN (1,2,3)', null, false);
             } elseif ($extra['modal_eskalasi'] === 'belum') {
-                $this->db->where('t.escalation_at IS NULL', null, false);
+                $this->db->where('(t.escalation_at IS NULL OR t.status IN (1,2,3))', null, false);
             }
         }
 
