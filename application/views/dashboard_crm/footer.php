@@ -131,6 +131,16 @@
 
 </div><!-- /container-fluid -->
 
+<!-- ============================================================ -->
+<!-- DATATABLES + BUTTONS + JSZIP                                -->
+<!-- ============================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.0.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.0.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.0.2/js/buttons.html5.min.js"></script>
+
 <script>
 Chart.defaults.font.family = "system-ui, sans-serif";
 Chart.defaults.plugins.legend.display = false;
@@ -145,6 +155,57 @@ function updateClock() {
   }
 }
 setInterval(updateClock,1000); updateClock();
+
+// ============================================================
+// DATATABLES — Global instances, language, dan helper
+// ============================================================
+const _dtInstances = {};
+const _dtLang = {
+  search:        'Cari:',
+  lengthMenu:    'Tampilkan _MENU_ data',
+  info:          'Menampilkan _START_\u2013_END_ dari _TOTAL_ data',
+  infoEmpty:     'Tidak ada data',
+  infoFiltered:  '(disaring dari _MAX_ total data)',
+  zeroRecords:   'Tidak ada data yang cocok',
+  emptyTable:    'Tidak ada data tersedia',
+  processing:    'Memproses...',
+  loadingRecords:'Memuat...',
+  paginate:      { first: '\u00ab', last: '\u00bb', next: '\u203a', previous: '\u2039' },
+};
+
+/**
+ * _initDT — Init (atau re-init) instance DataTables.
+ * @param {string} tableId  — id <table> element (tanpa #)
+ * @param {Array}  columns  — kolom DataTables
+ * @param {Array}  data     — array of row objects
+ * @returns DataTables instance
+ */
+function _initDT(tableId, columns, data) {
+  if (_dtInstances[tableId] && $.fn.DataTable.isDataTable('#' + tableId)) {
+    _dtInstances[tableId].destroy();
+    $('#' + tableId).empty();
+  }
+  _dtInstances[tableId] = $('#' + tableId).DataTable({
+    data:       data,
+    columns:    columns,
+    pageLength: 25,
+    lengthMenu: [10, 25, 50, 100, { label: 'Semua', value: -1 }],
+    order:      [],
+    scrollX:    true,
+    language:   _dtLang,
+    dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
+    buttons: [{
+      extend:        'excelHtml5',
+      text:          'Export Excel',
+      title:         'dashboard-crm-export',
+      className:     'btn-dt-excel d-none',
+      exportOptions: { columns: ':visible', orthogonal: 'export' }
+    }],
+  });
+  return _dtInstances[tableId];
+}
 
 // ============================================================
 // DATA CHART — dimuat via AJAX (fallback: set false untuk inline)
@@ -603,7 +664,8 @@ function loadModalPage(page) {
     type:      _currentModal.type,
     status_id: _currentModal.extra?.status_id || '',
     divisi:    _currentModal.extra?.divisi    || '',
-    page:      page,
+    page:      1,
+    per_page:  2000,
     date_from: filterGlobal.date_from,
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
@@ -624,13 +686,12 @@ function loadModalPage(page) {
 
   fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => {
-      if (!r.ok) {
-        throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      }
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
       return r.json();
     })
     .then(res => {
       document.getElementById('modalLoading').style.display = 'none';
+      document.getElementById('modalPagination').innerHTML = '';
       if (!res.success) {
         document.getElementById('modalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
         return;
@@ -663,34 +724,36 @@ function loadModalPage(page) {
         return;
       }
 
-      // Render tabel
+      // Render DataTable
       const jenisHeader = ['divisi', 'ketepatan_total'].includes(_currentModal.type) ? 'Kategori' : 'Jenis';
+      document.getElementById('modalContent').innerHTML =
+        '<table id="dtModal" class="table table-sm modal-table align-middle" style="width:100%"></table>';
 
-      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
-        <div class="table-responsive">
-        <table class="table table-sm modal-table align-middle">
-          <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>${jenisHeader}</th><th>Due Date</th><th>Done Date</th><th>Status</th><th>Waktu</th>
-          </tr></thead><tbody>`;
+      const columns = [
+        { title: 'No. Komplain', data: 'id_task',
+          render: (d, type) => type === 'display' ? `<code style="font-size:11px">${d}</code>` : d },
+        { title: 'Konsumen', data: 'konsumen', defaultContent: '-' },
+        { title: 'Lokasi', data: 'lokasi',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: jenisHeader, data: 'jenis',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Due Date', data: 'due_date',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Done Date', data: 'done_date',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Status', data: 'status',
+          render: (d, type, row) => type === 'display'
+            ? `<span class="badge-status badge-${getBadgeClass(row.status_id)}">${d||'-'}</span>`
+            : (d||'-') },
+        { title: 'Waktu', data: 'waktu_status',
+          render: (d, type) => {
+            if (type !== 'display') return d;
+            const cls = d==='On Time'?'ontime':d==='Late'?'late':'working';
+            return `<span class="badge-status badge-${cls}">${d}</span>`;
+          }},
+      ];
 
-      res.data.forEach(row => {
-        const waktuClass = row.waktu_status === 'On Time' ? 'ontime' : row.waktu_status === 'Late' ? 'late' : 'working';
-        html += `<tr>
-          <td><code style="font-size:11px">${row.id_task}</code></td>
-          <td>${row.konsumen || '-'}</td>
-          <td><small>${row.lokasi || '-'}</small></td>
-          <td><small>${row.jenis || '-'}</small></td>
-          <td><small>${row.due_date || '-'}</small></td>
-          <td><small>${row.done_date || '-'}</small></td>
-          <td><span class="badge-status badge-${getBadgeClass(row.status_id)}">${row.status || '-'}</span></td>
-          <td><span class="badge-status badge-${waktuClass}">${row.waktu_status}</span></td>
-        </tr>`;
-      });
-      html += '</tbody></table></div>';
-      document.getElementById('modalContent').innerHTML = html;
-
-      // Paginasi
-      renderPagination(res.total, res.per_page, page);
+      _initDT('dtModal', columns, res.data);
     })
     .catch(err => {
       console.error('Modal Error:', err);
@@ -704,46 +767,15 @@ function getBadgeClass(status_id) {
   return map[status_id] || 'working';
 }
 
-function renderPagination(total, per_page, current_page) {
-  const total_pages = Math.ceil(total / per_page);
-  if (total_pages <= 1) { document.getElementById('modalPagination').innerHTML = ''; return; }
+// renderPagination — digantikan oleh DataTables pagination (tetap ada untuk backward compat)
+function renderPagination() { /* DataTables handles pagination */ }
 
-  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
-  if (current_page > 1) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadModalPage(${current_page-1});return false;">‹</a></li>`;
-  }
-  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
-  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadModalPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
-  for (let p = start; p <= end; p++) {
-    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadModalPage(${p});return false;">${p}</a></li>`;
-  }
-  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadModalPage(${total_pages});return false;">${total_pages}</a></li>`;
-  if (current_page < total_pages) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadModalPage(${current_page+1});return false;">›</a></li>`;
-  }
-  html += '</ul></nav>';
-  document.getElementById('modalPagination').innerHTML = html;
-}
-
-// Export CSV — Buka download file
+// Export Excel — trigger DataTables Buttons (.xlsx native via JSZip)
 if (document.getElementById('btnExport')) {
   document.getElementById('btnExport').addEventListener('click', () => {
-    const params = new URLSearchParams({
-      type:      _currentModal.type,
-      status_id: _currentModal.extra?.status_id || '',
-      divisi:    _currentModal.extra?.divisi    || '',
-      date_from: filterGlobal.date_from,
-      date_to:   filterGlobal.date_to,
-      sumber:    filterGlobal.sumber,
-      divisi_filter: filterGlobal.divisi,
-      mf_sumber:         _mfSumber,
-      mf_status:         _mfStatus,
-      mf_due_date_from:  _mfDueDateFrom,
-      mf_due_date_to:    _mfDueDateTo,
-      mf_done_date_from: _mfDoneDateFrom,
-      mf_done_date_to:   _mfDoneDateTo,
-    });
-    window.location.href = BASE_URL + 'dash_crm/export_modal_data?' + params.toString();
+    if (_dtInstances['dtModal'] && $.fn.DataTable.isDataTable('#dtModal')) {
+      _dtInstances['dtModal'].button('.btn-dt-excel').trigger();
+    }
   });
 }
 
@@ -778,8 +810,8 @@ function openKetepatanGlobal(initialFilter = 'all') {
 
 function loadKetepatanGlobalPage(page) {
   const params = new URLSearchParams({
-    page:           page,
-    per_page:       20,
+    page:           1,
+    per_page:       2000,
     ketepatan:      _ketepatanGlobalFilter, // all, ontime, late
     date_from:      filterGlobal.date_from,
     date_to:        filterGlobal.date_to,
@@ -800,42 +832,44 @@ function loadKetepatanGlobalPage(page) {
     })
     .then(res => {
       document.getElementById('ketepatanGlobalLoading').style.display = 'none';
-      
+      document.getElementById('ketepatanGlobalPagination').innerHTML = '';
       if (!res.success) {
         document.getElementById('ketepatanGlobalContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
         return;
       }
-
       if (res.data.length === 0) {
         document.getElementById('ketepatanGlobalContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data.</p>';
         return;
       }
 
-      // Render tabel
-      let html = `<p class="text-muted small">Menampilkan ${((page-1)*res.per_page)+1}–${Math.min(page*res.per_page, res.total)} dari ${res.total.toLocaleString('id')} data.</p>
-        <div class="table-responsive">
-        <table class="table table-sm modal-table align-middle">
-          <thead><tr>
-            <th>No. Komplain</th><th>Konsumen</th><th>Lokasi</th><th>Divisi</th><th>Kategori</th><th>Due Date</th><th>Done Date</th><th>Status</th>
-          </tr></thead><tbody>`;
+      // Render DataTable
+      document.getElementById('ketepatanGlobalContent').innerHTML =
+        '<table id="dtKetepatan" class="table table-sm modal-table align-middle" style="width:100%"></table>';
 
-      res.data.forEach(row => {
-        const statusClass = row.waktu_status === 'On Time' ? 'ontime' : row.waktu_status === 'Late' ? 'late' : 'working';
-        html += `<tr>
-          <td><code style="font-size:11px">${row.id_task}</code></td>
-          <td><small>${row.konsumen || '-'}</small></td>
-          <td><small>${row.lokasi || '-'}</small></td>
-          <td><small><strong>${row.divisi || '-'}</strong></small></td>
-          <td><small>${row.jenis || '-'}</small></td>
-          <td><small>${row.due_date || '-'}</small></td>
-          <td><small>${row.done_date || '-'}</small></td>
-          <td><span class="badge-status badge-${statusClass}">${row.waktu_status}</span></td>
-        </tr>`;
-      });
-      html += '</tbody></table></div>';
-      document.getElementById('ketepatanGlobalContent').innerHTML = html;
+      const columns = [
+        { title: 'No. Komplain', data: 'id_task',
+          render: (d, type) => type === 'display' ? `<code style="font-size:11px">${d}</code>` : d },
+        { title: 'Konsumen', data: 'konsumen',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Lokasi', data: 'lokasi',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Divisi', data: 'divisi',
+          render: (d, type) => type === 'display' ? `<small><strong>${d||'-'}</strong></small>` : (d||'-') },
+        { title: 'Kategori', data: 'jenis',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Due Date', data: 'due_date',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Done Date', data: 'done_date',
+          render: (d, type) => type === 'display' ? `<small>${d||'-'}</small>` : (d||'-') },
+        { title: 'Status', data: 'waktu_status',
+          render: (d, type) => {
+            if (type !== 'display') return d;
+            const cls = d==='On Time'?'ontime':d==='Late'?'late':'working';
+            return `<span class="badge-status badge-${cls}">${d}</span>`;
+          }},
+      ];
 
-      renderKetepatanGlobalPagination(res.total, res.per_page, page);
+      _initDT('dtKetepatan', columns, res.data);
     })
     .catch(err => {
       console.error('Ketepatan Global Error:', err);
@@ -865,45 +899,15 @@ function resetKetepatanDateFilter() {
   loadKetepatanGlobalPage(1);
 }
 
-function renderKetepatanGlobalPagination(total, per_page, current_page) {
-  const total_pages = Math.ceil(total / per_page);
-  if (total_pages <= 1) {
-    document.getElementById('ketepatanGlobalPagination').innerHTML = '';
-    return;
-  }
+// renderKetepatanGlobalPagination — digantikan oleh DataTables pagination
+function renderKetepatanGlobalPagination() { /* DataTables handles pagination */ }
 
-  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
-  if (current_page > 1) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${current_page-1});return false;">‹</a></li>`;
-  }
-  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
-  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
-  for (let p = start; p <= end; p++) {
-    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${p});return false;">${p}</a></li>`;
-  }
-  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${total_pages});return false;">${total_pages}</a></li>`;
-  if (current_page < total_pages) {
-    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadKetepatanGlobalPage(${current_page+1});return false;">›</a></li>`;
-  }
-  html += '</ul></nav>';
-  document.getElementById('ketepatanGlobalPagination').innerHTML = html;
-}
-
-// Export ketepatan global — Download CSV file
+// Export Excel — trigger DataTables Buttons (.xlsx native via JSZip)
 if (document.getElementById('btnKetepatanExport')) {
   document.getElementById('btnKetepatanExport').addEventListener('click', () => {
-    const params = new URLSearchParams({
-      ketepatan:      _ketepatanGlobalFilter,
-      date_from:      filterGlobal.date_from,
-      date_to:        filterGlobal.date_to,
-      sumber:         filterGlobal.sumber,
-      divisi:         filterGlobal.divisi,
-      due_date_from:  _kgDueDateFrom,
-      due_date_to:    _kgDueDateTo,
-      done_date_from: _kgDoneDateFrom,
-      done_date_to:   _kgDoneDateTo,
-    });
-    window.location.href = BASE_URL + 'dash_crm/export_ketepatan_data?' + params.toString();
+    if (_dtInstances['dtKetepatan'] && $.fn.DataTable.isDataTable('#dtKetepatan')) {
+      _dtInstances['dtKetepatan'].button('.btn-dt-excel').trigger();
+    }
   });
 }
 
@@ -913,18 +917,21 @@ if (document.getElementById('btnKetepatanExport')) {
 const bsRatingModal = new bootstrap.Modal(document.getElementById('ratingDrilldownModal'));
 let _ratingBintangFilter = null; // null = semua, 1-5 = per bintang
 
-// Export rating konsumen — Download Excel file
+// Export Excel — trigger DataTables Buttons (.xlsx native via JSZip)
 if (document.getElementById('btnRatingExport')) {
   document.getElementById('btnRatingExport').addEventListener('click', () => {
-    const params = new URLSearchParams({
-      date_from: filterGlobal.date_from,
-      date_to:   filterGlobal.date_to,
-      sumber:    filterGlobal.sumber,
-      divisi:    filterGlobal.divisi,
-    });
-    if (_ratingBintangFilter !== null) params.set('bintang', _ratingBintangFilter);
-    window.location.href = BASE_URL + 'dash_crm/export_rating_data?' + params.toString();
+    if (_dtInstances['dtRating'] && $.fn.DataTable.isDataTable('#dtRating')) {
+      _dtInstances['dtRating'].button('.btn-dt-excel').trigger();
+    }
   });
+}
+
+// starBadge — render nilai rating dengan warna dan ikon bintang
+function starBadge(val) {
+  if (val === null || val === undefined || val === '') return '<span class="text-muted">—</span>';
+  const n = parseFloat(val);
+  const color = n >= 4 ? '#0E9F6E' : n >= 3 ? '#D97706' : '#E02424';
+  return `<span style="font-weight:700;color:${color};font-family:monospace">${n.toFixed(1)} ⭐</span>`;
 }
 
 function _renderRatingStarFilter() {
@@ -955,7 +962,8 @@ function openRatingDrilldown(bintang) {
 
 function loadRatingDrilldownPage(page) {
   const params = new URLSearchParams({
-    page:      page,
+    page:      1,
+    per_page:  2000,
     date_from: filterGlobal.date_from,
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
@@ -967,64 +975,44 @@ function loadRatingDrilldownPage(page) {
     .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then(res => {
       document.getElementById('ratingDrilldownLoading').style.display = 'none';
+      document.getElementById('ratingDrilldownPagination').innerHTML = '';
 
       if (!res.success) {
         document.getElementById('ratingDrilldownContent').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
         return;
       }
 
-      // Update filter pills (active state) setelah data dimuat
+      // Update filter pills
       _renderRatingStarFilter();
 
       if (res.data.length === 0) {
         document.getElementById('ratingDrilldownContent').innerHTML = '<p class="text-muted text-center py-4">Tidak ada data rating.</p>';
-        renderRatingDrilldownPagination(0, res.per_page, 1);
         return;
       }
 
-      const from = ((page-1)*res.per_page)+1;
-      const to   = Math.min(page*res.per_page, res.total);
-      let html = `<p class="text-muted small mb-2">Menampilkan ${from}–${to} dari ${res.total.toLocaleString('id')} data.</p>
-        <div class="table-responsive">
-        <table class="table table-sm modal-table align-middle">
-          <thead><tr style="white-space:nowrap">
-            <th>No. Komplain</th>
-            <th>Konsumen</th>
-            <th>Project</th>
-            <th>Blok</th>
-            <th>Jenis</th>
-            <th style="text-align:center">⭐ Avg</th>
-            <th style="text-align:center">Pelayanan</th>
-            <th style="text-align:center">Kualitas</th>
-            <th style="text-align:center">Respons</th>
-            <th>Feedback</th>
-          </tr></thead><tbody>`;
+      // Render DataTable
+      document.getElementById('ratingDrilldownContent').innerHTML =
+        '<table id="dtRating" class="table table-sm modal-table align-middle" style="width:100%"></table>';
 
-      function starBadge(val) {
-        if (val === null || val === undefined || val === '') return '<span class="text-muted">—</span>';
-        const n = parseFloat(val);
-        const color = n >= 4 ? '#0E9F6E' : n >= 3 ? '#D97706' : '#E02424';
-        return `<span style="font-weight:700;color:${color};font-family:monospace">${n.toFixed(1)} ⭐</span>`;
-      }
+      const columns = [
+        { title: 'No. Komplain', data: 'id_task',
+          render: (d, type) => type === 'display' ? `<code style="font-size:11px">${d}</code>` : d },
+        { title: 'Konsumen', data: 'konsumen', defaultContent: '-' },
+        { title: 'Project', data: 'project', defaultContent: '-' },
+        { title: 'Blok', data: 'blok', defaultContent: '-' },
+        { title: 'Jenis', data: 'jenis', defaultContent: '-' },
+        { title: '⭐ Avg', data: 'avg_rating',
+          render: (d, type) => type === 'display' ? starBadge(d) : (d !== null && d !== '' ? parseFloat(d) : '') },
+        { title: 'Pelayanan', data: 'pelayanan',
+          render: (d, type) => type === 'display' ? starBadge(d) : (d !== null && d !== '' ? parseFloat(d) : '') },
+        { title: 'Kualitas', data: 'kualitas',
+          render: (d, type) => type === 'display' ? starBadge(d) : (d !== null && d !== '' ? parseFloat(d) : '') },
+        { title: 'Respons', data: 'respons',
+          render: (d, type) => type === 'display' ? starBadge(d) : (d !== null && d !== '' ? parseFloat(d) : '') },
+        { title: 'Feedback', data: 'feedback', defaultContent: '-' },
+      ];
 
-      res.data.forEach(row => {
-        const feedbackEscaped = (row.feedback || '-').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-        html += `<tr>
-          <td style="white-space:nowrap"><code style="font-size:11px">${row.id_task}</code></td>
-          <td style="min-width:140px"><small>${row.konsumen}</small></td>
-          <td style="min-width:140px"><small>${row.project}</small></td>
-          <td style="min-width:100px"><small>${row.blok}</small></td>
-          <td style="min-width:120px"><small>${row.jenis}</small></td>
-          <td style="text-align:center;white-space:nowrap">${starBadge(row.avg_rating)}</td>
-          <td style="text-align:center;white-space:nowrap">${starBadge(row.pelayanan)}</td>
-          <td style="text-align:center;white-space:nowrap">${starBadge(row.kualitas)}</td>
-          <td style="text-align:center;white-space:nowrap">${starBadge(row.respons)}</td>
-          <td style="min-width:260px;max-width:420px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${feedbackEscaped}</td>
-        </tr>`;
-      });
-      html += '</tbody></table></div>';
-      document.getElementById('ratingDrilldownContent').innerHTML = html;
-      renderRatingDrilldownPagination(res.total, res.per_page, page);
+      _initDT('dtRating', columns, res.data);
     })
     .catch(err => {
       document.getElementById('ratingDrilldownLoading').style.display = 'none';
@@ -1032,21 +1020,8 @@ function loadRatingDrilldownPage(page) {
     });
 }
 
-function renderRatingDrilldownPagination(total, per_page, current_page) {
-  const total_pages = Math.ceil(total / per_page);
-  if (total_pages <= 1) { document.getElementById('ratingDrilldownPagination').innerHTML = ''; return; }
-  let html = '<nav><ul class="pagination pagination-sm justify-content-center mb-0">';
-  if (current_page > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${current_page-1});return false;">‹</a></li>`;
-  const start = Math.max(1, current_page-2), end = Math.min(total_pages, current_page+2);
-  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(1);return false;">1</a></li><li class="page-item disabled"><span class="page-link">…</span></li>`;
-  for (let p = start; p <= end; p++) {
-    html += `<li class="page-item ${p===current_page?'active':''}"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${p});return false;">${p}</a></li>`;
-  }
-  if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">…</span></li><li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${total_pages});return false;">${total_pages}</a></li>`;
-  if (current_page < total_pages) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadRatingDrilldownPage(${current_page+1});return false;">›</a></li>`;
-  html += '</ul></nav>';
-  document.getElementById('ratingDrilldownPagination').innerHTML = html;
-}
+// renderRatingDrilldownPagination — digantikan oleh DataTables pagination
+function renderRatingDrilldownPagination() { /* DataTables handles pagination */ }
 
 // ============================================================
 // FILTER — submit via form GET

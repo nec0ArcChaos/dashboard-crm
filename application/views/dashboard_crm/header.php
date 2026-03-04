@@ -7,7 +7,10 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/buttons/3.0.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
 <style>
   :root {
     --bs-body-bg: #F4F6FA;
@@ -81,6 +84,21 @@
 
   /* Loading overlay for modal */
   #modalLoading { display:none; text-align:center; padding:40px; }
+
+  /* DATATABLES inside modal */
+  .dataTables_wrapper { font-size: 13px; }
+  .dataTables_wrapper .dataTables_filter input { border: 1px solid #E4E8F0; border-radius: 6px; padding: 3px 8px; font-size: 12px; }
+  .dataTables_wrapper .dataTables_filter input:focus { border-color: #1A56DB; box-shadow: 0 0 0 3px rgba(26,86,219,.12); outline: 0; }
+  .dataTables_wrapper .dataTables_length select { border: 1px solid #E4E8F0; border-radius: 6px; padding: 2px 6px; font-size: 12px; }
+  .dataTables_wrapper .dataTables_info { font-size: 12px; color: #96A3B7; padding-top: 6px; }
+  .dataTables_wrapper .dataTables_paginate { padding-top: 4px; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button { font-size: 12px; padding: 2px 8px; border-radius: 5px; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover { background: #1A56DB; color: #fff !important; border-color: #1A56DB; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: #EBF0FF; color: #1A56DB !important; border-color: #E4E8F0; }
+  table.dataTable thead th { font-size: 11px; font-weight: 700; color: #96A3B7; text-transform: uppercase; letter-spacing: .06em; background: #F8F9FC; border-bottom: 1px solid #E4E8F0; }
+  table.dataTable tbody td { vertical-align: middle; }
+  table.dataTable.no-footer { border-bottom: 1px solid #E4E8F0; }
 </style>
 </head>
 <body>

@@ -218,7 +218,7 @@ class Dash_crm extends CI_Controller {
         $status_id = $this->input->get('status_id');
         $divisi    = $this->input->get('divisi');
         $page      = (int)$this->input->get('page') ?: 1;
-        $per_page  = 10;
+        $per_page  = max(10, min(5000, (int)$this->input->get('per_page') ?: 10));
         $offset    = ($page - 1) * $per_page;
         $filter    = $this->_get_filter();
 
@@ -773,7 +773,7 @@ class Dash_crm extends CI_Controller {
 
             $bintang  = $this->input->get('bintang'); // null or 1-5
             $page     = (int)$this->input->get('page') ?: 1;
-            $per_page = 10;
+            $per_page = max(10, min(5000, (int)$this->input->get('per_page') ?: 10));
             $offset   = ($page - 1) * $per_page;
             $filter   = $this->_get_filter();
 
