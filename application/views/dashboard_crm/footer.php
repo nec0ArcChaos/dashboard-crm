@@ -975,7 +975,8 @@ function loadRatingDrilldownPage(page) {
           <thead><tr style="white-space:nowrap">
             <th>No. Komplain</th>
             <th>Konsumen</th>
-            <th>Lokasi</th>
+            <th>Project</th>
+            <th>Blok</th>
             <th>Jenis</th>
             <th style="text-align:center">⭐ Avg</th>
             <th style="text-align:center">Pelayanan</th>
@@ -996,7 +997,8 @@ function loadRatingDrilldownPage(page) {
         html += `<tr>
           <td style="white-space:nowrap"><code style="font-size:11px">${row.id_task}</code></td>
           <td style="min-width:140px"><small>${row.konsumen}</small></td>
-          <td style="min-width:160px"><small>${row.lokasi}</small></td>
+          <td style="min-width:140px"><small>${row.project}</small></td>
+          <td style="min-width:100px"><small>${row.blok}</small></td>
           <td style="min-width:120px"><small>${row.jenis}</small></td>
           <td style="text-align:center;white-space:nowrap">${starBadge(row.avg_rating)}</td>
           <td style="text-align:center;white-space:nowrap">${starBadge(row.pelayanan)}</td>

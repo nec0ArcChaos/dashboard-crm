@@ -661,11 +661,11 @@ class Dash_crm extends CI_Controller {
 
             $data = [];
             foreach ($rows as $row) {
-                $lokasi = trim(($row['project'] ?? '') . ' ' . ($row['blok'] ?? ''));
                 $data[] = [
                     'id_task'    => $row['id_task'],
                     'konsumen'   => $row['konsumen'] ?: '-',
-                    'lokasi'     => $lokasi ?: '-',
+                    'project'    => $row['project'] ?: '-',
+                    'blok'       => $row['blok'] ?: '-',
                     'jenis'      => $row['jenis'] ?: '-',
                     'divisi'     => $row['divisi'] ?: '-',
                     'pelayanan'  => $row['pelayanan'],
