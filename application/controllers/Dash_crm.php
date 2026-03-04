@@ -855,56 +855,54 @@ class Dash_crm extends CI_Controller {
                     return;
                 }
 
-                // Helper sanitize function
-                $sanitize = function($value, $default = '') {
-                    if ($value === null || $value === false) {
-                        return $default;
-                    }
+                $sanitize = function($value, $default = '-') {
+                    if ($value === null || $value === false || $value === '') return $default;
                     return trim(strip_tags((string)$value));
                 };
+                $esc = function($value) {
+                    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+                };
 
-                // Prepare CSV headers untuk drilldown
-                $headers = [
-                    'ID Komplain',
-                    'Konsumen',
-                    'Lokasi',
-                    'Blok',
-                    'Divisi',
-                    'Jenis',
-                    'Status',
-                    'Tanggal Dibuat',
-                ];
+                $headers = ['ID Komplain','Konsumen','Lokasi','Blok','Divisi','Jenis','Status','Tanggal Dibuat'];
 
-                // Build CSV content
-                $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
-
-                foreach ($rows as $row) {
-                    $line = [
-                        $sanitize($row['id_task'], '-'),
-                        $sanitize($row['konsumen'], '-'),
-                        $sanitize($row['lokasi'], '-'),
-                        $sanitize($row['blok'], '-'),
-                        $sanitize($row['divisi'], '-'),
-                        $sanitize($row['jenis_kategori'], '-'),
-                        $sanitize($row['status_label'], 'Unknown'),
-                        $sanitize($row['created_at'], '-'),
-                    ];
-                    $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
+                $excel_content  = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+                $excel_content .= '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+                $excel_content .= '<x:Name>Drilldown Verifikasi</x:Name>';
+                $excel_content .= '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+                $excel_content .= '<body><table border="1" style="border-collapse:collapse"><thead><tr>';
+                foreach ($headers as $h) {
+                    $excel_content .= '<th style="background:#2563EB;color:#fff;font-weight:bold;padding:6px 10px;white-space:nowrap">' . $esc($h) . '</th>';
                 }
+                $excel_content .= '</tr></thead><tbody>';
 
-                // Generate filename dengan timestamp
+                $status_bg = ['Waiting'=>'#FEF3C7','Reject'=>'#FEE2E2','Done'=>'#D1FAE5'];
+                foreach ($rows as $row) {
+                    $status = $sanitize($row['status_label'], 'Unknown');
+                    $bg = '';
+                    foreach ($status_bg as $k => $v) { if (stripos($status, $k) !== false) { $bg = $v; break; } }
+                    $excel_content .= '<tr>';
+                    $excel_content .= '<td style="padding:5px 8px;font-family:Courier New">' . $esc($sanitize($row['id_task'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['konsumen'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['lokasi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['blok'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['divisi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['jenis_kategori'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;text-align:center;font-weight:bold' . ($bg ? ';background:' . $bg : '') . '">' . $esc($status) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['created_at'])) . '</td>';
+                    $excel_content .= '</tr>';
+                }
+                $excel_content .= '</tbody></table></body></html>';
+
                 $timestamp = date('Y-m-d_H-i-s');
-                $filename = "export_drilldown_verifikasi_{$timestamp}.csv";
+                $filename = "export_drilldown_verifikasi_{$timestamp}.xls";
 
-                // Output CSV file
-                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Type: application/vnd.ms-excel; charset=utf-8');
                 header('Content-Disposition: attachment; filename="' . $filename . '"');
                 header('Pragma: no-cache');
                 header('Expires: 0');
                 header('Cache-Control: no-store, no-cache, must-revalidate');
 
-                echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
-                echo $csv_content;
+                echo $excel_content;
                 exit;
             }
 
@@ -933,52 +931,39 @@ class Dash_crm extends CI_Controller {
             }
 
             // Helper function untuk konversi null ke string
-            $sanitize = function($value, $default = '') {
-                if ($value === null || $value === false) {
-                    return $default;
-                }
-                // Hapus HTML tags dan trim
+            $sanitize = function($value, $default = '-') {
+                if ($value === null || $value === false || $value === '') return $default;
                 return trim(strip_tags((string)$value));
             };
+            $esc = function($value) {
+                return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+            };
 
-            // Tentukan header berdasarkan tipe export
-            $headers = [
-                'ID Komplain',
-                'Konsumen',
-                'Lokasi',
-                'Blok',
-                'Jenis',
-                'Divisi',
-                'Status',
-                'Tanggal Dibuat',
-                'Tanggal Diverifikasi',
-                'Diverifikasi Oleh',
-                'Catatan Verifikasi',
-            ];
+            $isKetepatan = ($type === 'divisi' || strpos($type, 'ketepatan') !== false);
 
-            // Jika tipe divisi (ketepatan), tambahkan kolom ketepatan
-            if ($type === 'divisi' || strpos($type, 'ketepatan') !== false) {
-                $headers = [
-                    'ID Komplain',
-                    'Konsumen',
-                    'Lokasi',
-                    'Blok',
-                    'Divisi',
-                    'Jenis',
-                    'Due Date',
-                    'Done Date',
-                    'Status Ketepatan',
-                    'Tanggal Dibuat',
-                ];
+            if ($isKetepatan) {
+                $headers = ['ID Komplain','Konsumen','Lokasi','Blok','Divisi','Jenis','Due Date','Done Date','Status Ketepatan','Tanggal Dibuat'];
+                $sheet_name = 'Ketepatan';
+            } else {
+                $headers = ['ID Komplain','Konsumen','Lokasi','Blok','Jenis','Divisi','Status','Tanggal Dibuat','Tanggal Diverifikasi','Diverifikasi Oleh','Catatan Verifikasi'];
+                $sheet_name = 'Detail Komplain';
             }
 
-            // Build CSV headers
-            $csv_content = implode(',', array_map(function($h) { return '"' . str_replace('"', '""', $h) . '"'; }, $headers)) . "\n";
+            $timestamp = date('Y-m-d_H-i-s');
+            $type_label = str_replace(['verif_', 'esk_', 'ketepatan_'], '', $type);
 
-            // Build CSV rows
+            $excel_content  = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            $excel_content .= '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+            $excel_content .= '<x:Name>' . $esc($sheet_name) . '</x:Name>';
+            $excel_content .= '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+            $excel_content .= '<body><table border="1" style="border-collapse:collapse"><thead><tr>';
+            foreach ($headers as $h) {
+                $excel_content .= '<th style="background:#2563EB;color:#fff;font-weight:bold;padding:6px 10px;white-space:nowrap">' . $esc($h) . '</th>';
+            }
+            $excel_content .= '</tr></thead><tbody>';
+
             foreach ($rows as $row) {
-                if ($type === 'divisi' || strpos($type, 'ketepatan') !== false) {
-                    // Format untuk ketepatan
+                if ($isKetepatan) {
                     $waktu_status = '-';
                     if ($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00') {
                         if ($row['due_date'] && $row['due_date'] !== '0000-00-00') {
@@ -990,62 +975,56 @@ class Dash_crm extends CI_Controller {
                         }
                     }
 
-                    // Filter ketepatan jika modal_ketepatan diberikan
                     if (!empty($modal_ketepatan) && $modal_ketepatan !== 'all') {
-                        if ($modal_ketepatan === 'ontime' && $waktu_status !== 'On Time') {
-                            continue;
-                        }
-                        if ($modal_ketepatan === 'late' && $waktu_status !== 'Late') {
-                            continue;
-                        }
+                        if ($modal_ketepatan === 'ontime' && $waktu_status !== 'On Time') continue;
+                        if ($modal_ketepatan === 'late'   && $waktu_status !== 'Late')    continue;
                     }
 
-                    $line = [
-                        $sanitize($row['id_task'], '-'),
-                        $sanitize($row['konsumen'], '-'),
-                        $sanitize($row['lokasi'], '-'),
-                        $sanitize($row['blok'], '-'),
-                        $sanitize($row['divisi'], '-'),
-                        $sanitize($row['jenis'] ?: $row['category'], '-'),
-                        $row['due_date'] && $row['due_date'] !== '0000-00-00' ? date('d-m-Y', strtotime($row['due_date'])) : '-',
-                        $row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00' ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-',
-                        $waktu_status,
-                        $sanitize($row['created_at'], '-'),
-                    ];
+                    $bg = $waktu_status === 'On Time' ? '#D1FAE5' : ($waktu_status === 'Late' ? '#FEE2E2' : '#F3F4F6');
+                    $excel_content .= '<tr>';
+                    $excel_content .= '<td style="padding:5px 8px;font-family:Courier New">' . $esc($sanitize($row['id_task'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['konsumen'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['lokasi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['blok'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['divisi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['jenis'] ?: $row['category'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($row['due_date'] && $row['due_date'] !== '0000-00-00' ? date('d-m-Y', strtotime($row['due_date'])) : '-') . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($row['done_date'] && $row['done_date'] !== '0000-00-00 00:00:00' ? date('d-m-Y H:i', strtotime($row['done_date'])) : '-') . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;text-align:center;font-weight:bold;background:' . $bg . '">' . $esc($waktu_status) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['created_at'])) . '</td>';
+                    $excel_content .= '</tr>';
                 } else {
-                    // Format untuk verifikasi dan eskalasi
-                    $line = [
-                        $sanitize($row['id_task'], '-'),
-                        $sanitize($row['konsumen'], '-'),
-                        $sanitize($row['lokasi'], '-'),
-                        $sanitize($row['blok'], '-'),
-                        $sanitize($row['jenis'] ?: $row['category'], '-'),
-                        $sanitize($row['divisi'], '-'),
-                        $sanitize($row['status_label'], 'Unknown'),
-                        $sanitize($row['created_at'], '-'),
-                        $sanitize($row['verified_at'], '-'),
-                        $sanitize($row['verified_name'], '-'),
-                        $sanitize($row['verified_note'], '-'),
-                    ];
+                    $status = $sanitize($row['status_label'], 'Unknown');
+                    $status_bg = ['Waiting'=>'#FEF3C7','Reject'=>'#FEE2E2','Done'=>'#D1FAE5'];
+                    $bg = '';
+                    foreach ($status_bg as $k => $v) { if (stripos($status, $k) !== false) { $bg = $v; break; } }
+                    $excel_content .= '<tr>';
+                    $excel_content .= '<td style="padding:5px 8px;font-family:Courier New">' . $esc($sanitize($row['id_task'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['konsumen'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['lokasi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['blok'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['jenis'] ?: $row['category'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['divisi'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;text-align:center;font-weight:bold' . ($bg ? ';background:' . $bg : '') . '">' . $esc($status) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['created_at'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px;white-space:nowrap">' . $esc($sanitize($row['verified_at'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['verified_name'])) . '</td>';
+                    $excel_content .= '<td style="padding:5px 8px">' . $esc($sanitize($row['verified_note'])) . '</td>';
+                    $excel_content .= '</tr>';
                 }
-
-                $csv_content .= implode(',', array_map(function($v) { return '"' . str_replace('"', '""', $v) . '"'; }, $line)) . "\n";
             }
 
-            // Generate filename dengan timestamp dan tipe
-            $timestamp = date('Y-m-d_H-i-s');
-            $type_label = str_replace(['verif_', 'esk_', 'ketepatan_'], '', $type);
-            $filename = "export_komplain_{$type_label}_{$timestamp}.csv";
+            $excel_content .= '</tbody></table></body></html>';
 
-            // Output CSV file
-            header('Content-Type: text/csv; charset=utf-8');
+            $filename = "export_komplain_{$type_label}_{$timestamp}.xls";
+
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             header('Pragma: no-cache');
             header('Expires: 0');
             header('Cache-Control: no-store, no-cache, must-revalidate');
 
-            echo "\xEF\xBB\xBF"; // BOM untuk UTF-8
-            echo $csv_content;
+            echo $excel_content;
             exit;
 
         } catch (Exception $e) {
