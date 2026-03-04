@@ -265,28 +265,32 @@ class Dash_crm extends CI_Controller {
         if ($status_id) $extra['status_id'] = $status_id;
         if ($divisi)    $extra['divisi']     = $divisi;
 
-        // Route mf_sumber ke key spesifik yang dibaca model (per kelompok tipe)
-        if ($mf_sumber !== 'all') {
-            if (strpos($type, 'verif') === 0) {
-                $extra['modal_verif_sumber']     = $mf_sumber;
-            } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
-                $extra['modal_ketepatan_sumber'] = $mf_sumber;
-            } else {
-                // esk_*, status
-                $extra['modal_sumber']           = $mf_sumber;
-            }
-        }
+        // Tipe Ringkasan: sumber & status sudah implicit dari tipe, skip routing
+        $ringkasan_types = [
+            'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b',
+            'esk_konsumen_sudah', 'esk_konsumen_belum', 'esk_sosmed_sudah', 'esk_sosmed_belum',
+        ];
 
-        // Route mf_status ke key spesifik yang dibaca model (per kelompok tipe)
-        if ($mf_status !== 'all') {
-            if (strpos($type, 'verif') === 0) {
-                $extra['modal_verif_status']  = $mf_status; // verified / unverified
-            } elseif (strpos($type, 'esk') === 0) {
-                $extra['modal_eskalasi']      = $mf_status; // sudah / belum
-            } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
-                $extra['modal_ketepatan_status'] = $mf_status; // ontime / late
+        if (!in_array($type, $ringkasan_types)) {
+            if ($mf_sumber !== 'all') {
+                if (strpos($type, 'verif') === 0) {
+                    $extra['modal_verif_sumber']     = $mf_sumber;
+                } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
+                    $extra['modal_ketepatan_sumber'] = $mf_sumber;
+                } else {
+                    $extra['modal_sumber']           = $mf_sumber;
+                }
             }
-            // tipe 'status' tidak memiliki sub-filter status
+
+            if ($mf_status !== 'all') {
+                if (strpos($type, 'verif') === 0) {
+                    $extra['modal_verif_status']     = $mf_status;
+                } elseif (strpos($type, 'esk') === 0) {
+                    $extra['modal_eskalasi']         = $mf_status;
+                } elseif ($type === 'ketepatan_total' || $type === 'divisi') {
+                    $extra['modal_ketepatan_status'] = $mf_status;
+                }
+            }
         }
 
         // Route filter tanggal ke key spesifik yang dibaca model

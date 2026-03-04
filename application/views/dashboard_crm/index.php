@@ -134,13 +134,13 @@
           <div class="chart-sub">Per sumber &amp; status</div>
           <div class="mt-2">
             <?php if ($filter['sumber'] !== 'sosmed'): ?>
-            <div class="status-item" onclick="openModal('verif_total')">
+            <div class="status-item" onclick="openModal('verif_konsumen')">
               <div class="status-dot-sm" style="background:#0E9F6E"></div>
               <div class="status-name">Konsumen — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['terverifikasi'], 0, ',', '.') ?></div>
               <span class="pill <?= $pct_konsumen_verif >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_konsumen_verif ?>%</span>
             </div>
-            <div class="status-item" onclick="openModal('verif_total')">
+            <div class="status-item" onclick="openModal('verif_konsumen_belum')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Konsumen — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['konsumen']['belum'], 0, ',', '.') ?></div>
@@ -160,13 +160,13 @@
             </div>
             <?php endif; ?>
             <?php if ($filter['sumber'] !== 'konsumen'): ?>
-            <div class="status-item" onclick="openModal('verif_total')">
+            <div class="status-item" onclick="openModal('verif_sosmed_v')">
               <div class="status-dot-sm" style="background:#1A56DB"></div>
               <div class="status-name">Sosmed — Terverifikasi</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['terverifikasi'], 0, ',', '.') ?></div>
               <span class="pill <?= $pct_verif_sosmed >= 60 ? 'pill-green' : 'pill-red' ?>" style="font-size:10px"><?= $pct_verif_sosmed ?>%</span>
             </div>
-            <div class="status-item" onclick="openModal('verif_total')">
+            <div class="status-item" onclick="openModal('verif_sosmed_b')">
               <div class="status-dot-sm" style="background:#E02424"></div>
               <div class="status-name">Sosmed — Belum Verf.</div>
               <div class="status-qty"><?= number_format($verif_per_sumber['sosmed']['belum'], 0, ',', '.') ?></div>
@@ -237,8 +237,7 @@
       </div>
       <div class="col-12 col-md-6 col-lg-3">
         <div class="chart-card">
-          <div class="chart-title">Proporsi Eskalasi <small class="text-primary" style="font-size:10px">↗ Klik chart</small></div>
-          <div class="chart-sub">Klik lingkaran untuk detail</div>
+          <div class="chart-title">Proporsi Eskalasi</div>
           <div style="height:160px"><canvas id="chartEskalasiDonut"></canvas></div>
           <div class="d-flex justify-content-center gap-3 mt-3">
             <span class="d-flex align-items-center gap-1">

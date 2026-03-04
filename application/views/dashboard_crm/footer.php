@@ -378,6 +378,12 @@ let _mfDueDateTo    = '';
 let _mfDoneDateFrom = '';
 let _mfDoneDateTo   = '';
 
+// Tipe Ringkasan Verifikasi & Eskalasi — sumber & status sudah implicit dari tipe
+const _ringkasanTypes = [
+  'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b',
+  'esk_konsumen_sudah', 'esk_konsumen_belum', 'esk_sosmed_sudah', 'esk_sosmed_belum'
+];
+
 // Status config per modal type group
 const _mfStatusConfig = {
   verif:     { label: 'Verifikasi:', l1: 'Sudah', l2: 'Belum', v1: 'verified', v2: 'unverified' },
@@ -415,11 +421,6 @@ function openModal(type, extra = {}) {
   document.getElementById('mfDueDateFrom').value = '';
   document.getElementById('mfDueDateTo').value   = '';
 
-  // Types from Ringkasan Verifikasi & Ringkasan Eskalasi — only date filter
-  const _ringkasanTypes = [
-    'verif_konsumen', 'verif_konsumen_belum', 'verif_sosmed_v', 'verif_sosmed_b',
-    'esk_konsumen_sudah', 'esk_konsumen_belum', 'esk_sosmed_sudah', 'esk_sosmed_belum'
-  ];
   const sumberStatusRow = document.getElementById('mfSumberStatusRow');
   const separator       = document.getElementById('mfSeparator');
 
@@ -539,6 +540,8 @@ function resetModalDateFilter() {
 }
 
 function loadModalPage(page) {
+  const isRingkasan = _ringkasanTypes.includes(_currentModal.type);
+
   const params = new URLSearchParams({
     type:      _currentModal.type,
     status_id: _currentModal.extra?.status_id || '',
@@ -548,13 +551,17 @@ function loadModalPage(page) {
     date_to:   filterGlobal.date_to,
     sumber:    filterGlobal.sumber,
     divisi_filter: filterGlobal.divisi,
-    mf_sumber:         _mfSumber,
-    mf_status:         _mfStatus,
     mf_due_date_from:  _mfDueDateFrom,
     mf_due_date_to:    _mfDueDateTo,
     mf_done_date_from: _mfDoneDateFrom,
     mf_done_date_to:   _mfDoneDateTo,
   });
+
+  // Ringkasan: sumber & status sudah ditentukan oleh tipe, tidak perlu dikirim
+  if (!isRingkasan) {
+    params.set('mf_sumber', _mfSumber);
+    params.set('mf_status', _mfStatus);
+  }
 
   const fetchUrl = BASE_URL + 'dash_crm/modal_detail?' + params.toString();
 
