@@ -485,6 +485,12 @@ if (USE_AJAX_CHART) {
 // MODAL LOGIC — AJAX ke controller
 // ============================================================
 const bsModal = new bootstrap.Modal(document.getElementById('detailModal'));
+// Fix: recalculate column widths setelah animasi modal selesai (mengatasi misalignment scrollX)
+document.getElementById('detailModal').addEventListener('shown.bs.modal', () => {
+  if (_dtInstances['dtModal'] && $.fn.DataTable.isDataTable('#dtModal')) {
+    _dtInstances['dtModal'].columns.adjust().draw(false);
+  }
+});
 let _currentModal = {};
 // Unified modal filter state
 let _mfSumber = 'all';
@@ -782,6 +788,13 @@ if (document.getElementById('btnExport')) {
 // ============================================================
 // GLOBAL KETEPATAN WAKTU MODAL — Detail semua divisi
 // ============================================================
+const bsKetepatanModal = new bootstrap.Modal(document.getElementById('ketepatanGlobalModal'));
+// Fix: recalculate column widths setelah animasi modal selesai
+document.getElementById('ketepatanGlobalModal').addEventListener('shown.bs.modal', () => {
+  if (_dtInstances['dtKetepatan'] && $.fn.DataTable.isDataTable('#dtKetepatan')) {
+    _dtInstances['dtKetepatan'].columns.adjust().draw(false);
+  }
+});
 let _ketepatanGlobalFilter = 'all'; // all, ontime, late
 let _kgDueDateFrom  = '';
 let _kgDueDateTo    = '';
@@ -803,8 +816,7 @@ function openKetepatanGlobal(initialFilter = 'all') {
   const titleMap = { all: 'Ketepatan Waktu Pengerjaan — Detail Semua Divisi', ontime: 'Ketepatan Waktu — Data On Time', late: 'Ketepatan Waktu — Data Late / Terlambat' };
   document.querySelector('#ketepatanGlobalModal .modal-title').textContent = titleMap[initialFilter] || titleMap['all'];
 
-  const ketepatanGlobalModal = new bootstrap.Modal(document.getElementById('ketepatanGlobalModal'));
-  ketepatanGlobalModal.show();
+  bsKetepatanModal.show();
   loadKetepatanGlobalPage(1);
 }
 
@@ -915,6 +927,12 @@ if (document.getElementById('btnKetepatanExport')) {
 // DRILLDOWN RATING KONSUMEN
 // ============================================================
 const bsRatingModal = new bootstrap.Modal(document.getElementById('ratingDrilldownModal'));
+// Fix: recalculate column widths setelah animasi modal selesai
+document.getElementById('ratingDrilldownModal').addEventListener('shown.bs.modal', () => {
+  if (_dtInstances['dtRating'] && $.fn.DataTable.isDataTable('#dtRating')) {
+    _dtInstances['dtRating'].columns.adjust().draw(false);
+  }
+});
 let _ratingBintangFilter = null; // null = semua, 1-5 = per bintang
 
 // Export Excel — trigger DataTables Buttons (.xlsx native via JSZip)
