@@ -5,54 +5,11 @@
     <div class="d-flex flex-wrap align-items-center gap-3">
       <span class="filter-label">Filter</span>
       <div class="position-relative">
-        <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                id="btnPeriode" onclick="togglePeriodPopup()">
-          <i class="bi bi-calendar3"></i>
-          <span id="btnPeriodeLabel">Periode</span>
-          <i class="bi bi-chevron-down" style="font-size:.65rem"></i>
-        </button>
-        <div id="periodPopup" class="card shadow-sm position-absolute mt-1" style="display:none;z-index:1050;min-width:240px;left:0">
-          <div class="card-body p-2">
-            <div class="list-group list-group-flush">
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="this_week" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>This Week</span>
-              </label>
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="last_week" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>Last Week</span>
-              </label>
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="this_month" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>This Month</span>
-              </label>
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="last_month" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>Last Month</span>
-              </label>
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="last_year" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>Last Year</span>
-              </label>
-              <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0">
-                <input type="radio" name="datePreset" value="custom" class="form-check-input m-0" onchange="onPresetChange()">
-                <span>Custom Date</span>
-              </label>
-            </div>
-            <div id="customDateRange" class="mt-2 px-2" style="display:none">
-              <div class="mb-2">
-                <label class="form-label mb-1 text-secondary" style="font-size:.75rem">Dari</label>
-                <input type="date" class="form-control form-control-sm" id="dateFrom"
-                       value="<?= htmlspecialchars($filter['date_from']) ?>">
-              </div>
-              <div>
-                <label class="form-label mb-1 text-secondary" style="font-size:.75rem">Sampai</label>
-                <input type="date" class="form-control form-control-sm" id="dateTo"
-                       value="<?= htmlspecialchars($filter['date_to']) ?>">
-              </div>
-            </div>
-          </div>
-        </div>
+        <i class="bi bi-calendar3 position-absolute" style="left:10px;top:50%;transform:translateY(-50%);font-size:.85rem;color:#5A6A85;z-index:1;pointer-events:none"></i>
+        <input type="text" id="dateRangePicker" class="form-control form-control-sm"
+               style="width:260px; cursor:pointer; background:#F4F6FA; padding-left:30px;" readonly>
+        <input type="hidden" id="dateFrom" value="<?= htmlspecialchars($filter['date_from']) ?>">
+        <input type="hidden" id="dateTo" value="<?= htmlspecialchars($filter['date_to']) ?>">
       </div>
       <div class="vr d-none d-md-block"></div>
       <div class="d-flex align-items-center gap-2">

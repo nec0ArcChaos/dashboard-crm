@@ -15,13 +15,12 @@
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Due Date:</label>
-              <input type="date" id="kgDueDateFrom" class="form-control form-control-sm" style="width:140px">
+              <input type="text" id="kgDueDateRange" class="form-control form-control-sm" style="width:240px;cursor:pointer;background:#F4F6FA" readonly placeholder="Pilih tanggal...">
             </div>
             <div class="d-flex align-items-center gap-2">
               <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Done Date:</label>
-              <input type="date" id="kgDoneDateFrom" class="form-control form-control-sm" style="width:140px">
+              <input type="text" id="kgDoneDateRange" class="form-control form-control-sm" style="width:240px;cursor:pointer;background:#F4F6FA" readonly placeholder="Pilih tanggal...">
             </div>
-            <button class="btn btn-sm btn-primary" onclick="applyKetepatanDateFilter()">Terapkan</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="resetKetepatanDateFilter()">Reset</button>
           </div>
         </div>
@@ -76,14 +75,8 @@
           <div class="d-flex flex-wrap gap-3 align-items-center">
             <label class="fw-semibold text-secondary" style="font-size:12px;margin:0">Filter Tanggal:</label>
             <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Dari:</label>
-              <input type="date" id="mfDueDateFrom" class="form-control form-control-sm" style="width:140px">
+              <input type="text" id="mfDateRange" class="form-control form-control-sm" style="width:240px;cursor:pointer;background:#F4F6FA" readonly placeholder="Pilih tanggal...">
             </div>
-            <div class="d-flex align-items-center gap-2">
-              <label style="font-size:12px;color:#96A3B7;margin:0;white-space:nowrap">Sampai:</label>
-              <input type="date" id="mfDueDateTo" class="form-control form-control-sm" style="width:140px">
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="applyModalDateFilter()">Terapkan</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="resetModalDateFilter()">Reset</button>
           </div>
         </div>
@@ -542,8 +535,7 @@ function openModal(type, extra = {}) {
   document.getElementById('mfSosmed').checked    = false;
   document.getElementById('mfStatus1').checked   = false;
   document.getElementById('mfStatus2').checked   = false;
-  document.getElementById('mfDueDateFrom').value = '';
-  document.getElementById('mfDueDateTo').value   = '';
+  document.getElementById('mfDateRange').value = '';
 
   const sumberStatusRow = document.getElementById('mfSumberStatusRow');
   const separator       = document.getElementById('mfSeparator');
@@ -649,22 +641,48 @@ function selectStatus(checkbox, idx) {
   loadModalPage(1);
 }
 
-function applyModalDateFilter() {
-  _mfDueDateFrom  = document.getElementById('mfDueDateFrom').value;
-  _mfDueDateTo    = document.getElementById('mfDueDateTo').value;
-  _mfDoneDateFrom = '';
-  _mfDoneDateTo   = '';
-  document.getElementById('modalContent').innerHTML = '';
-  document.getElementById('modalPagination').innerHTML = '';
-  document.getElementById('modalLoading').style.display = 'block';
-  loadModalPage(1);
-}
+// Init daterangepicker untuk modal Detail Komplain
+$(function() {
+  $('#mfDateRange').daterangepicker({
+    autoUpdateInput: false,
+    locale: {
+      format: 'DD/MM/YYYY',
+      applyLabel: 'Terapkan',
+      cancelLabel: 'Batal',
+      customRangeLabel: 'Custom',
+      daysOfWeek: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+      monthNames: ['Januari','Februari','Maret','April','Mei','Juni',
+                   'Juli','Agustus','September','Oktober','November','Desember'],
+      firstDay: 1
+    },
+    ranges: {
+      'Today': [moment(), moment()],
+      'Yesterday': [moment().subtract(1,'days'), moment().subtract(1,'days')],
+      'Last 7 Days': [moment().subtract(6,'days'), moment()],
+      'Last 30 Days': [moment().subtract(29,'days'), moment()],
+      'This Month': [moment().startOf('month'), moment().endOf('month')],
+      'Last Month': [moment().subtract(1,'month').startOf('month'), moment().subtract(1,'month').endOf('month')]
+    },
+    alwaysShowCalendars: true,
+    opens: 'right'
+  });
+  $('#mfDateRange').on('apply.daterangepicker', function(ev, picker) {
+    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+    _mfDueDateFrom  = picker.startDate.format('YYYY-MM-DD');
+    _mfDueDateTo    = picker.endDate.format('YYYY-MM-DD');
+    _mfDoneDateFrom = '';
+    _mfDoneDateTo   = '';
+    document.getElementById('modalContent').innerHTML = '';
+    document.getElementById('modalPagination').innerHTML = '';
+    document.getElementById('modalLoading').style.display = 'block';
+    loadModalPage(1);
+  });
+});
 
 function resetModalDateFilter() {
   _mfDueDateFrom = _mfDueDateTo = '';
   _mfDoneDateFrom = _mfDoneDateTo = '';
-  document.getElementById('mfDueDateFrom').value = '';
-  document.getElementById('mfDueDateTo').value   = '';
+  document.getElementById('mfDateRange').value = '';
   document.getElementById('modalContent').innerHTML = '';
   document.getElementById('modalPagination').innerHTML = '';
   document.getElementById('modalLoading').style.display = 'block';
@@ -813,8 +831,8 @@ function openKetepatanGlobal(initialFilter = 'all') {
   _ketepatanGlobalFilter = initialFilter; // Set filter awal (all, ontime, late)
   // Reset date filters
   _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
-  document.getElementById('kgDueDateFrom').value  = '';
-  document.getElementById('kgDoneDateFrom').value = '';
+  document.getElementById('kgDueDateRange').value  = '';
+  document.getElementById('kgDoneDateRange').value = '';
 
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
@@ -898,21 +916,59 @@ function loadKetepatanGlobalPage(page) {
     });
 }
 
-function applyKetepatanDateFilter() {
-  _kgDueDateFrom  = document.getElementById('kgDueDateFrom').value;
-  _kgDueDateTo    = _kgDueDateFrom; // filter exact date (same from & to)
-  _kgDoneDateFrom = document.getElementById('kgDoneDateFrom').value;
-  _kgDoneDateTo   = _kgDoneDateFrom; // filter exact date (same from & to)
-  document.getElementById('ketepatanGlobalContent').innerHTML = '';
-  document.getElementById('ketepatanGlobalPagination').innerHTML = '';
-  document.getElementById('ketepatanGlobalLoading').style.display = 'block';
-  loadKetepatanGlobalPage(1);
-}
+// Init daterangepicker untuk modal Ketepatan Global
+$(function() {
+  var kgPickerOpts = {
+    autoUpdateInput: false,
+    locale: {
+      format: 'DD/MM/YYYY',
+      applyLabel: 'Terapkan',
+      cancelLabel: 'Batal',
+      customRangeLabel: 'Custom',
+      daysOfWeek: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+      monthNames: ['Januari','Februari','Maret','April','Mei','Juni',
+                   'Juli','Agustus','September','Oktober','November','Desember'],
+      firstDay: 1
+    },
+    ranges: {
+      'Today': [moment(), moment()],
+      'Yesterday': [moment().subtract(1,'days'), moment().subtract(1,'days')],
+      'Last 7 Days': [moment().subtract(6,'days'), moment()],
+      'Last 30 Days': [moment().subtract(29,'days'), moment()],
+      'This Month': [moment().startOf('month'), moment().endOf('month')],
+      'Last Month': [moment().subtract(1,'month').startOf('month'), moment().subtract(1,'month').endOf('month')]
+    },
+    alwaysShowCalendars: true,
+    opens: 'right'
+  };
+
+  $('#kgDueDateRange').daterangepicker(kgPickerOpts);
+  $('#kgDueDateRange').on('apply.daterangepicker', function(ev, picker) {
+    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+    _kgDueDateFrom = picker.startDate.format('YYYY-MM-DD');
+    _kgDueDateTo   = picker.endDate.format('YYYY-MM-DD');
+    document.getElementById('ketepatanGlobalContent').innerHTML = '';
+    document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+    document.getElementById('ketepatanGlobalLoading').style.display = 'block';
+    loadKetepatanGlobalPage(1);
+  });
+
+  $('#kgDoneDateRange').daterangepicker(kgPickerOpts);
+  $('#kgDoneDateRange').on('apply.daterangepicker', function(ev, picker) {
+    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+    _kgDoneDateFrom = picker.startDate.format('YYYY-MM-DD');
+    _kgDoneDateTo   = picker.endDate.format('YYYY-MM-DD');
+    document.getElementById('ketepatanGlobalContent').innerHTML = '';
+    document.getElementById('ketepatanGlobalPagination').innerHTML = '';
+    document.getElementById('ketepatanGlobalLoading').style.display = 'block';
+    loadKetepatanGlobalPage(1);
+  });
+});
 
 function resetKetepatanDateFilter() {
   _kgDueDateFrom = _kgDueDateTo = _kgDoneDateFrom = _kgDoneDateTo = '';
-  document.getElementById('kgDueDateFrom').value  = '';
-  document.getElementById('kgDoneDateFrom').value = '';
+  document.getElementById('kgDueDateRange').value  = '';
+  document.getElementById('kgDoneDateRange').value = '';
   document.getElementById('ketepatanGlobalContent').innerHTML = '';
   document.getElementById('ketepatanGlobalPagination').innerHTML = '';
   document.getElementById('ketepatanGlobalLoading').style.display = 'block';
@@ -1052,153 +1108,49 @@ function renderRatingDrilldownPagination() { /* DataTables handles pagination */
 // ============================================================
 // FILTER — submit via form GET
 // ============================================================
-const PRESET_LABELS = {
-  this_week: 'This Week', last_week: 'Last Week',
-  this_month: 'This Month', last_month: 'Last Month',
-  last_year: 'Last Year', custom: 'Custom Date'
-};
-
-function formatDateISO(d) {
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-}
-
-function formatDateShort(iso) {
-  const d = new Date(iso + 'T00:00:00');
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
-}
-
-function getDateRange(preset) {
-  const today = new Date();
-  switch(preset) {
-    case 'this_week': {
-      const dow = today.getDay() || 7;
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - dow + 1);
-      return { from: formatDateISO(monday), to: formatDateISO(today) };
-    }
-    case 'last_week': {
-      const dow = today.getDay() || 7;
-      const lastMonday = new Date(today);
-      lastMonday.setDate(today.getDate() - dow - 6);
-      const lastSunday = new Date(lastMonday);
-      lastSunday.setDate(lastMonday.getDate() + 6);
-      return { from: formatDateISO(lastMonday), to: formatDateISO(lastSunday) };
-    }
-    case 'this_month': {
-      const first = new Date(today.getFullYear(), today.getMonth(), 1);
-      const last  = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      return { from: formatDateISO(first), to: formatDateISO(last) };
-    }
-    case 'last_month': {
-      const first = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const last  = new Date(today.getFullYear(), today.getMonth(), 0);
-      return { from: formatDateISO(first), to: formatDateISO(last) };
-    }
-    case 'last_year': {
-      const yr = today.getFullYear() - 1;
-      return { from: yr + '-01-01', to: yr + '-12-31' };
-    }
-    default:
-      return null;
-  }
-}
-
-function getSelectedPreset() {
-  const checked = document.querySelector('input[name="datePreset"]:checked');
-  return checked ? checked.value : null;
-}
-
-function togglePeriodPopup() {
-  const popup = document.getElementById('periodPopup');
-  popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
-}
-
-function onPresetChange() {
-  const preset = getSelectedPreset();
-  const customDiv = document.getElementById('customDateRange');
-  if (preset === 'custom') {
-    customDiv.style.display = 'block';
-  } else {
-    customDiv.style.display = 'none';
-    const range = getDateRange(preset);
-    if (range) {
-      document.getElementById('dateFrom').value = range.from;
-      document.getElementById('dateTo').value = range.to;
-    }
-  }
-  updatePeriodeLabel();
-}
-
-function updatePeriodeLabel() {
-  const preset = getSelectedPreset();
-  const label = document.getElementById('btnPeriodeLabel');
-  if (!preset) {
-    // Default/reset state: tampilkan range tanggal dari input
-    const f = document.getElementById('dateFrom').value;
-    const t = document.getElementById('dateTo').value;
-    label.textContent = (f && t) ? formatDateShort(f) + ' - ' + formatDateShort(t) : 'Periode';
-  } else if (preset === 'custom') {
-    const f = document.getElementById('dateFrom').value;
-    const t = document.getElementById('dateTo').value;
-    label.textContent = (f && t) ? formatDateShort(f) + ' - ' + formatDateShort(t) : 'Custom Date';
-  } else {
-    label.textContent = PRESET_LABELS[preset] || 'Periode';
-  }
-}
+// ---- Date Range Picker ----
+$(function() {
+  $('#dateRangePicker').daterangepicker({
+    startDate: moment('<?php echo $filter['date_from']; ?>'),
+    endDate: moment('<?php echo $filter['date_to']; ?>'),
+    locale: {
+      format: 'DD/MM/YYYY',
+      applyLabel: 'Terapkan',
+      cancelLabel: 'Batal',
+      customRangeLabel: 'Custom',
+      daysOfWeek: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+      monthNames: ['Januari','Februari','Maret','April','Mei','Juni',
+                   'Juli','Agustus','September','Oktober','November','Desember'],
+      firstDay: 1
+    },
+    ranges: {
+      'Today': [moment(), moment()],
+      'Yesterday': [moment().subtract(1,'days'), moment().subtract(1,'days')],
+      'Last 7 Days': [moment().subtract(6,'days'), moment()],
+      'Last 30 Days': [moment().subtract(29,'days'), moment()],
+      'This Month': [moment().startOf('month'), moment().endOf('month')],
+      'Last Month': [moment().subtract(1,'month').startOf('month'), moment().subtract(1,'month').endOf('month')]
+    },
+    alwaysShowCalendars: true,
+    opens: 'right'
+  }, function(start, end) {
+    $('#dateFrom').val(start.format('YYYY-MM-DD'));
+    $('#dateTo').val(end.format('YYYY-MM-DD'));
+    applyFilter();
+  });
+});
 
 function applyFilter() {
-  const preset = getSelectedPreset();
-  let f, t;
-  if (!preset || preset === 'custom') {
-    // null (default state) atau custom: ambil dari input
-    f = document.getElementById('dateFrom').value;
-    t = document.getElementById('dateTo').value;
-  } else {
-    const range = getDateRange(preset);
-    f = range.from;
-    t = range.to;
-  }
+  const f = document.getElementById('dateFrom').value;
+  const t = document.getElementById('dateTo').value;
   const s = document.getElementById('filterSumber').value;
   const d = document.getElementById('filterDivisi').value;
   window.location.href = BASE_URL + 'dash_crm?date_from=' + f + '&date_to=' + t + '&sumber=' + s + '&divisi=' + d;
 }
 
 function resetFilter() {
-  // Reset default = This Month (awal bulan s.d. akhir bulan ini)
   window.location.href = BASE_URL + 'dash_crm';
 }
-
-// Close popup when clicking outside
-document.addEventListener('click', function(e) {
-  const popup = document.getElementById('periodPopup');
-  const btn = document.getElementById('btnPeriode');
-  if (popup.style.display !== 'none' && !popup.contains(e.target) && !btn.contains(e.target)) {
-    popup.style.display = 'none';
-  }
-});
-
-// Auto-detect preset on page load
-(function() {
-  const dateFrom = document.getElementById('dateFrom').value;
-  const dateTo   = document.getElementById('dateTo').value;
-  const presets  = ['this_week', 'last_week', 'this_month', 'last_month', 'last_year'];
-  let matched = false;
-  for (const p of presets) {
-    const range = getDateRange(p);
-    if (range && range.from === dateFrom && range.to === dateTo) {
-      const radio = document.querySelector('input[name="datePreset"][value="' + p + '"]');
-      if (radio) radio.checked = true;
-      matched = true;
-      break;
-    }
-  }
-  if (!matched) {
-    const radio = document.querySelector('input[name="datePreset"][value="custom"]');
-    if (radio) radio.checked = true;
-    document.getElementById('customDateRange').style.display = 'block';
-  }
-  updatePeriodeLabel();
-})()
 </script>
 </body>
 </html>
