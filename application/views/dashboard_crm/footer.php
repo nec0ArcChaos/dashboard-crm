@@ -1124,6 +1124,7 @@ $(function() {
       firstDay: 1
     },
     ranges: {
+      'Year to Date': [moment().startOf('year'), moment()],
       'Today': [moment(), moment()],
       'Yesterday': [moment().subtract(1,'days'), moment().subtract(1,'days')],
       'Last 7 Days': [moment().subtract(6,'days'), moment()],
@@ -1149,7 +1150,9 @@ function applyFilter() {
 }
 
 function resetFilter() {
-  window.location.href = BASE_URL + 'dash_crm';
+  var today = moment().format('YYYY-MM-DD');
+  var jan1  = new Date().getFullYear() + '-01-01';
+  window.location.href = BASE_URL + 'dash_crm?date_from=' + jan1 + '&date_to=' + today + '&sumber=all&divisi=all';
 }
 </script>
 </body>

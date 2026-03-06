@@ -1155,9 +1155,9 @@ class Dash_crm extends CI_Controller {
     }
 
     private function _get_filter() {
-        // Default = This Month (awal bulan s.d. akhir bulan ini)
-        $default_from = date('Y-m-01');
-        $default_to   = date('Y-m-t');
+        // Default = Year to Date (1 Jan s.d. hari ini)
+        $default_from = date('Y-01-01');
+        $default_to   = date('Y-m-d');
         $date_from = $this->input->get('date_from') ?: $default_from;
         $date_to   = $this->input->get('date_to')   ?: $default_to;
         $sumber    = $this->input->get('sumber')    ?: 'all';
