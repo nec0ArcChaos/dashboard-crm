@@ -289,13 +289,13 @@ function initAllCharts() {
   });
 
   _chartInstances.verifDonut = new Chart('chartVerifDonut', {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: ['Terverifikasi','Belum Terverifikasi'],
       datasets:[{ data:_verifDonutData, backgroundColor:['#0E9F6E','#E02424'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
     },
     options:{
-      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:11}}} },
       onClick:(e,els)=>{ if(els.length) openModal('verif_total'); }
     }
@@ -325,13 +325,13 @@ function initAllCharts() {
   });
 
   _chartInstances.eskalasiDonut = new Chart('chartEskalasiDonut', {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels:['Sudah Eskalasi','Belum Eskalasi'],
       datasets:[{ data:[eskalasiDonut.sudah, eskalasiDonut.belum], backgroundColor:['#0E9F6E','#D97706'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
     },
     options:{
-      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
       onClick:(e,els)=>{
         if(els.length) {
@@ -394,13 +394,13 @@ function initAllCharts() {
 
   // --- SECTION 05: STATUS KOMPLAIN ---
   _chartInstances.status = new Chart('chartStatus', {
-    type:'doughnut',
+    type:'pie',
     data:{
       labels: statusData.map(d=>d.label),
       datasets:[{ data:statusData.map(d=>d.qty), backgroundColor:statusData.map(d=>d.color), borderWidth:2, borderColor:'#fff', hoverOffset:8 }]
     },
     options:{
-      responsive:true, maintainAspectRatio:false, cutout:'55%',
+      responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:10},padding:10}} },
       onClick:(e,els)=>{ if(els.length) openModal('status', {status_id: statusData[els[0].index].id}); }
     }
