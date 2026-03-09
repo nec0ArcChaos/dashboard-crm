@@ -82,7 +82,6 @@
   .badge-waiting { background:#FFFBEB; color:#D97706; }
   .badge-reject  { background:#FEF2F2; color:#E02424; }
 
-  /* DIVIDER */
   .section-divider { height: 1px; background: #E4E8F0; margin: 4px 0 28px; }
 
   /* Loading overlay for modal */
